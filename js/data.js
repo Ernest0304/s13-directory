@@ -103,24 +103,24 @@ const FLOORPLAN = {
   // corridor network (centre-lines + extents) — the route runs along these
   corridor: {
     hY: 258, hX0: 268, hX1: 1120,    // main horizontal corridor
-    vX: 286, vY0: 64,  vY1: 486,      // left vertical corridor (serves K-05/K-04; stops at the lower corridor)
-    lY: 486, lX0: 150, lX1: 840,      // lower corridor (reaches K-03 on the left, runs above K-02/K-01)
+    vX: 286, vY0: 64,  vY1: 510,      // left vertical corridor (serves K-05/K-04; stops at the lower corridor)
+    lY: 510, lX0: 280, lX1: 840,      // lower corridor (above K-02/K-01; meets K-03's top-right)
     spurX: 1017,                       // entrance spur (kiosk up to main corridor)
     dropX: 835,                        // drop point to reach the lower corridor
     midX: 689, midY0: 44, midY1: 258,  // small walkway between K-09 and K-10 (holds the back door)
-    frontY: 762, frontX0: 760, frontX1: 1017,   // bottom/front corridor: kiosk -> K1&2 entrance (past Loading Bay)
-    k1k2X: 786, k1k2Y0: 496, k1k2Y1: 762,        // vertical walkway BESIDE K-01 (lower corridor down to the K1&2 entrance)
+    frontY: 762, frontX0: 712, frontX1: 1017,   // bottom/front corridor: kiosk -> K1&2 entrance (past Loading Bay)
+    k1k2X: 728, k1k2Y0: 510, k1k2Y1: 762,        // vertical walkway BESIDE K-01 (lower corridor down to the K1&2 entrance)
   },
 
   kiosk:    { x: 1017, y: 650 },       // the "You are here" point (right lobby)
   entrance: { x: 1017, y: 712 },
-  k1k2:     { x: 786, y: 772 },        // the "K1 & 2 only" bottom entrance (foot of the walkway beside K-01)
+  k1k2:     { x: 728, y: 770 },        // the "K1 & 2 only" bottom entrance (foot of the walkway beside K-01)
 
   // unit footprints (x, y, w, h) + which corridor they face
   units: {
     K05: { x: 56,   y: 44,  w: 214, h: 186, face: "right" },
     K04: { x: 56,   y: 294, w: 214, h: 178, face: "right" },
-    K03: { x: 56,   y: 504, w: 214, h: 236, face: "lower" },
+    K03: { x: 16,   y: 482, w: 262, h: 258, face: "lower" },
     K08: { x: 306,  y: 44,  w: 164, h: 186, face: "down"  },
     K09: { x: 492,  y: 44,  w: 186, h: 186, face: "down"  },
     K10: { x: 700,  y: 44,  w: 156, h: 186, face: "down"  },
@@ -128,8 +128,8 @@ const FLOORPLAN = {
     K12: { x: 1048, y: 44,  w: 156, h: 186, face: "down"  },
     K06: { x: 320,  y: 294, w: 232, h: 168, face: "up"    },
     K07: { x: 574,  y: 294, w: 250, h: 168, face: "up"    },
-    K02: { x: 278,  y: 524, w: 210, h: 216, face: "k1k2" },
-    K01: { x: 510,  y: 524, w: 210, h: 216, face: "k1k2" },
+    K02: { x: 282,  y: 524, w: 186, h: 216, face: "k1k2" },
+    K01: { x: 500,  y: 548, w: 196, h: 192, face: "k1k2" },
   },
 
   // service rooms (from the real plan / Ernest's sketch): toilets + mat wash
@@ -139,16 +139,17 @@ const FLOORPLAN = {
     { x: 898, y: 352, w: 94, h: 58, key: "toilet" },
     { x: 898, y: 414, w: 94, h: 58, key: "matWash" },
     { x: 1046, y: 290, w: 92, h: 58, key: "dryStore" },
+    { x: 796, y: 540, w: 140, h: 200, key: "loadingBay" },
   ],
 
   // doorways drawn as a swing symbol (hinge x,y; w = leaf length; rot = open angle°)
   doors: [
     { x: 1000, y: 562, w: 34, rot: -90 },   // main entrance door (corridor <-> lobby, by "you are here")
     { x: 678, y: 118, w: 22, rot: 90 },      // back door inside the K-09/K-10 walkway
-    { x: 764, y: 760, w: 44, rot: 90 },      // K1 & 2 bottom entrance (on the walkway beside K-01)
-    { x: 274, y: 556, w: 64, rot: 180 },     // door IN the wall between K-03 and K-02 (they share a wall, not a corridor)
+    { x: 706, y: 758, w: 44, rot: 90 },      // K1 & 2 bottom entrance (on the walkway beside K-01)
+    { x: 280, y: 544, w: 68, rot: 180 },     // door IN the wall between K-03 and K-02 (they share a wall, not a corridor)
   ],
 
   // the entrance lobby (open area on the right where the kiosk stands)
-  lobby: { x: 846, y: 528, w: 338, h: 200 },
+  lobby: { x: 950, y: 528, w: 234, h: 212 },
 };

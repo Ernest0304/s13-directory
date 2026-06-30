@@ -14,6 +14,8 @@ const MapKiosk = (function () {
   /* ---- shared: walking route + directions (top-down coords) ------------- */
   function routePoints(id) {
     const u = FP.units[id], c = FP.corridor, k = FP.kiosk, ctr = center(u);
+    if (id === "K03")            // big corner kitchen: down the left corridor to the lower corridor, in at its top-right (right side is a wall)
+      return [[k.x, k.y], [c.spurX, c.hY], [c.vX, c.hY], [c.vX, c.lY], [c.lX0, c.lY], [u.x + u.w - 26, c.lY + 28]];
     if (u.face === "k1k2")       // K-01/K-02: out the front, left past the loading bay, UP the walkway beside K-01, in from the lower corridor
       return [[k.x, k.y], [k.x, c.frontY], [c.k1k2X, c.frontY], [c.k1k2X, c.lY], [ctr.x, c.lY], [ctr.x, u.y]];
     const pts = [[k.x, k.y], [c.spurX, c.hY]];
@@ -82,7 +84,6 @@ const MapKiosk = (function () {
       <rect class="fp-building" x="20" y="20" width="${W - 40}" height="${H - 40}" rx="30" filter="url(#fpSoft)"/>
       ${lanes}${rooms}${doors2d}${units}${route}
       <text class="fp-entrance-label" x="${FP.entrance.x}" y="${FP.entrance.y + 5}">▾ ${I18N.entrance[lang]}</text>
-      <text class="fp-room-label" x="${FP.lobby.x + 86}" y="${FP.lobby.y + 46}">${I18N.loadingBay[lang]}</text>
       <text class="fp-entrance-label" x="${FP.k1k2.x}" y="${FP.k1k2.y + 22}">▴ ${I18N.k1k2Entrance[lang]}</text>
       <circle class="fp-here-ring" cx="${k.x}" cy="${k.y}"/><circle class="fp-here-dot" cx="${k.x}" cy="${k.y}" r="12"/>
       <text class="fp-here-label" x="${k.x}" y="${k.y + 38}">${I18N.youAreHere[lang]}</text></svg>`;
@@ -191,8 +192,6 @@ const MapKiosk = (function () {
       s += `<polyline class="fp-route-bg" points="${rp}"/><polyline class="fp-route" points="${rp}" style="stroke:${brand}"/>
             <circle cx="${ep[0].toFixed(1)}" cy="${ep[1].toFixed(1)}" r="12" style="fill:${brand};stroke:#fff;stroke-width:3"/>`; }
 
-    const lbp = pj(FP.lobby.x + 86, FP.lobby.y + 46, 0, C);
-    s += `<text class="fp3-room-label" x="${lbp[0].toFixed(1)}" y="${lbp[1].toFixed(1)}">${I18N.loadingBay[lang]}</text>`;
     const k2p = pj(FP.k1k2.x, FP.k1k2.y, 0, C);
     s += `<text class="fp3-room-label" x="${k2p[0].toFixed(1)}" y="${(k2p[1] + 16).toFixed(1)}">▴ ${I18N.k1k2Entrance[lang]}</text>`;
     const kp = pj(k.x, k.y, 6, C);
