@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Smart City Kitchens · S13 Kitchen Directory</title>
+  <!-- PWA / offline kiosk shell -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#0b0d12" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="apple-touch-icon" href="img/icon-192.png" />
+  <link rel="icon" type="image/png" href="img/icon-192.png" />
+  <link rel="stylesheet" href="css/styles.css?v=14" />
+</head>
+<body>
+  <div class="kiosk" id="kiosk" data-theme="bright">
+
+    <!-- persistent toggles -->
+    <div class="toggles">
+      <div class="seg" id="viewToggle" role="group" aria-label="Map view">
+        <button data-view="3d" class="active" aria-label="3D view">3D</button>
+        <button data-view="2d" aria-label="2D view">2D</button>
+      </div>
+      <div class="seg" id="langToggle" role="group" aria-label="Language">
+        <button data-lang="en" class="active" aria-label="English">EN</button>
+        <button data-lang="zh" aria-label="中文">中</button>
+      </div>
+      <div class="seg" id="themeToggle" role="group" aria-label="Theme">
+        <button data-theme="bright" class="active" aria-label="Day theme">☀</button>
+        <button data-theme="dark" aria-label="Night theme">🌙</button>
+      </div>
+    </div>
+
+    <!-- ===================== ATTRACT / IDLE ===================== -->
+    <section class="screen attract active" id="attract" aria-label="Touch to begin">
+      <div class="topbar">
+        <div class="wordmark">
+          <span class="mark"><img src="img/logo.png?v=2" alt="Smart City Kitchens" /></span>
+          <span class="wm-text"><b data-i18n-brand>SMART CITY KITCHENS</b><i data-i18n="directory">Kitchen Directory</i><em class="wm-addr">1550 Bedok North Ave 4, #04-21<br/>Singapore 489950</em></span>
+        </div>
+      </div>
+      <div class="slides" id="slides"><!-- brand slides injected --></div>
+      <div class="attract-foot">
+        <div class="cta" data-i18n="touchToBegin">TOUCH TO BEGIN</div>
+        <div class="cta-sub" data-i18n="tapAnywhere">Tap anywhere to start</div>
+      </div>
+    </section>
+
+    <!-- ===================== MAIN: map + shops ===================== -->
+    <section class="screen main" id="main" aria-label="Directory">
+      <header class="main-head">
+        <div class="wordmark sm">
+          <span class="mark"><img src="img/logo.png?v=2" alt="Smart City Kitchens" /></span>
+          <span class="wm-text"><b data-i18n-brand>SMART CITY KITCHENS</b><i data-i18n="directory">Kitchen Directory</i><em class="wm-addr">1550 Bedok North Ave 4, #04-21<br/>Singapore 489950</em></span>
+        </div>
+        <button class="home-btn" id="homeBtn">⟲ <span data-i18n="startOver">Start Over</span></button>
+      </header>
+
+      <div class="stage">
+        <div class="map-card">
+          <div class="map-card-head">
+            <span data-i18n="floorPlan">Floor Plan</span>
+            <span class="legend"><span class="h" data-i18n="youAreHere">YOU ARE HERE</span></span>
+          </div>
+          <div class="map" id="map"><!-- SVG injected --></div>
+        </div>
+
+        <aside class="info-panel" id="infoPanel"><!-- default prompt / selected info injected --></aside>
+      </div>
+
+      <div class="filters" id="filters"><!-- cuisine chips injected --></div>
+      <div class="shoprow" id="shoprow"><!-- kitchen cards injected --></div>
+      <footer class="facility-foot" id="facilityFoot"><!-- facility info injected --></footer>
+    </section>
+
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/data.js?v=6"></script>
+  <script src="js/db.js?v=2"></script>
+  <script src="js/map.js?v=15"></script>
+  <script src="js/app.js?v=10"></script>
+
+  <!-- Register the offline shell. Relative path → portable across local/live host.
+       Secure-context only (https or localhost); silently skipped otherwise. -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").catch(function (e) {
+          console.warn("[sw] registration failed:", e && e.message);
+        });
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+@charset "UTF-8";
+/* =============================================================================
+ * styles.css — Smart City Kitchens · S13 Kitchen Directory
+ * Landscape mall-directory kiosk (also degrades to portrait). Two live themes:
+ * data-theme="dark" (premium) and data-theme="bright" (mall). Bilingual EN / 中.
+ * ========================================================================== */
+
+:root {
+  --r-lg: 26px; --r-md: 18px; --r-sm: 12px;
+  --ease: cubic-bezier(.22,.61,.36,1);
+  --font: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+          "PingFang SC", "Microsoft YaHei", "Noto Sans SC", Roboto, system-ui, sans-serif;
+  --gold-1: #f6cb6b; --gold-2: #e69b3a; --on-gold: #1c1303;
+}
+
+/* ---------- theme tokens ---------- */
+.kiosk[data-theme="dark"] {
+  --bg: #090a0e; --ink: #f5f7fb; --muted: #aab1c2; --faint: #767d8f;
+  --line: rgba(255,255,255,.09); --glass: rgba(255,255,255,.05); --glass-2: rgba(255,255,255,.08);
+  --teal: #34e2b4; --shadow: 0 22px 55px -14px rgba(0,0,0,.6);
+  --map-bg: #0b0d13; --map-line: rgba(255,255,255,.10); --map-lane: #7d8795;
+  --map-room: rgba(255,255,255,.028); --map-room-line: rgba(255,255,255,.06);
+  --map-unit: rgba(255,255,255,.05); --map-unit-line: rgba(255,255,255,.09);
+  --map-label: #9aa1b3; --map-room-label: #767d8f; --route-bg: #0a0b10;
+  --bg-grad: radial-gradient(120% 70% at 80% 6%, rgba(230,155,58,.13), transparent 60%),
+             radial-gradient(120% 70% at 10% 96%, rgba(52,226,180,.10), transparent 55%), var(--bg);
+}
+.kiosk[data-theme="bright"] {
+  --bg: #eaeef4; --ink: #1b2433; --muted: #5b6678; --faint: #8a93a4;
+  --line: rgba(20,33,55,.12); --glass: #ffffff; --glass-2: #ffffff;
+  --teal: #0fae84; --shadow: 0 18px 44px -16px rgba(28,45,80,.28);
+  --map-bg: #f7f9fc; --map-line: #c8d2e0; --map-lane: #ffffff;
+  --map-room: #eef2f8; --map-room-line: #d6deea;
+  --map-unit: #ffffff; --map-unit-line: #d6deea;
+  --map-label: #4a5568; --map-room-label: #8a93a4; --route-bg: #ffffff;
+  --bg-grad: radial-gradient(120% 70% at 82% 4%, rgba(230,155,58,.16), transparent 58%),
+             radial-gradient(120% 70% at 6% 98%, rgba(20,174,132,.10), transparent 55%), var(--bg);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body { font-family: var(--font); overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation; overscroll-behavior: none; -webkit-font-smoothing: antialiased; }
+.kiosk { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: var(--bg-grad); color: var(--ink); transition: background .4s ease, color .4s ease; }
+h1, h2, h3 { letter-spacing: -.02em; }
+
+/* ---------- toggles ---------- */
+.toggles { position: absolute; top: clamp(16px, 2.4vh, 30px); right: clamp(16px, 2vw, 34px); z-index: 50; display: flex; gap: clamp(10px, 1.1vw, 16px); }
+.seg { display: flex; gap: 3px; padding: 4px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(14px); box-shadow: var(--shadow); }
+.seg button { font: inherit; font-weight: 700; cursor: pointer; border: none; color: var(--muted); background: transparent; border-radius: 999px; padding: .4em .9em; font-size: clamp(13px, 1.5vw, 17px); transition: all .25s var(--ease); }
+.seg button.active { color: var(--on-gold); background: linear-gradient(135deg, var(--gold-1), var(--gold-2)); }
+
+/* ---------- wordmark ---------- */
+.wordmark { display: flex; align-items: center; gap: clamp(9px, 1vw, 14px); }
+.wordmark .mark { width: clamp(46px, 4.4vw, 64px); height: clamp(46px, 4.4vw, 64px); border-radius: 15px; display: flex; align-items: center; justify-content: center; flex: none; overflow: hidden;
+  background: #ffffff; box-shadow: 0 8px 22px -10px rgba(0,0,0,.4), inset 0 0 0 1px rgba(0,0,0,.06); }
+.wordmark .mark img { max-width: 70%; max-height: 72%; width: auto; height: auto; object-fit: contain; display: block; }
+.wordmark .wm-text { display: flex; flex-direction: column; line-height: 1.12; }
+.wordmark .wm-text b { font-weight: 800; letter-spacing: .12em; font-size: clamp(12px, 1.3vw, 19px); }
+.wordmark .wm-text i { font-style: normal; color: var(--muted); font-weight: 500; letter-spacing: .03em; font-size: clamp(10px, 1vw, 14px); }
+.wm-addr { font-style: normal; display: block; margin-top: 5px; font-size: clamp(10px, .95vw, 13px); font-weight: 500; color: var(--muted); line-height: 1.35; letter-spacing: .01em; }
+.wordmark.sm .mark { width: clamp(40px, 3.4vw, 52px); height: clamp(40px, 3.4vw, 52px); }
+.wordmark.sm .wm-addr { display: none; }
+
+/* ---------- screens ---------- */
+.screen { position: absolute; inset: 0; display: flex; flex-direction: column; opacity: 0; visibility: hidden; transform: scale(1.01); transition: opacity .45s var(--ease), transform .45s var(--ease), visibility .45s; }
+.screen.active { opacity: 1; visibility: visible; transform: none; }
+
+/* ===================== ATTRACT ===================== */
+.attract { cursor: pointer; align-items: center; justify-content: center; }
+.topbar { position: absolute; top: 0; left: 0; right: 0; z-index: 6; display: flex; align-items: center; padding: clamp(18px, 2.4vw, 40px); }
+/* attract chrome stays light in both themes — the ad backdrop is always cinematic-dark */
+.attract .wordmark .wm-text b { color: #f4f6fb; }
+.attract .wordmark .wm-text i { color: rgba(255,255,255,.66); }
+.attract .wm-addr { color: rgba(255,255,255,.58); }
+.slides { position: absolute; inset: 0; z-index: 1; }
+.slide { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(6px, 1.4vh, 18px); opacity: 0; transform: scale(1.03); transition: opacity 1.1s var(--ease), transform 6s linear; }
+.slide.show { opacity: 1; transform: scale(1); }
+.slide .medallion { width: clamp(180px, 30vmin, 360px); height: clamp(180px, 30vmin, 360px); border-radius: 50%; overflow: hidden; display: grid; place-items: center; font-size: clamp(96px, 17vmin, 200px); line-height: 1; box-shadow: 0 30px 80px -22px rgba(0,0,0,.6), inset 0 2px 0 rgba(255,255,255,.18); }
+.slide h2 { font-size: clamp(40px, 7vmin, 92px); font-weight: 800; text-align: center; color: #fff; }
+.slide .cuisine { font-size: clamp(18px, 3.4vmin, 38px); font-weight: 600; color: #fff; opacity: .95; }
+.slide .tag { font-size: clamp(14px, 2.4vmin, 26px); color: #fff; opacity: .72; }
+.slide .utag { margin-top: clamp(6px, 1.2vh, 14px); font-weight: 700; letter-spacing: .12em; font-size: clamp(11px, 1.6vmin, 16px); color: #fff; opacity: .7; border: 1px solid rgba(255,255,255,.3); border-radius: 999px; padding: .32em .85em; }
+.attract-foot { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: clamp(50px, 9vh, 120px) 20px clamp(30px, 5vh, 70px); background: linear-gradient(to top, rgba(5,6,9,.85) 16%, transparent); }
+.cta { display: inline-flex; align-items: center; gap: .55em; font-weight: 800; letter-spacing: .04em; font-size: clamp(22px, 3.6vmin, 44px); color: var(--on-gold); padding: .6em 1.5em; border-radius: 999px; background: linear-gradient(135deg, var(--gold-1), var(--gold-2)); box-shadow: 0 16px 44px -10px rgba(230,155,58,.6); position: relative; overflow: hidden; animation: breathe 2.6s var(--ease) infinite; }
+.cta::before { content: "\01F446"; animation: tapbob 2.6s var(--ease) infinite; }
+.cta::after { content: ""; position: absolute; top: 0; left: -60%; width: 45%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent); transform: skewX(-18deg); animation: sheen 3.4s ease-in-out infinite; }
+.cta-sub { color: #cdd2de; opacity: .82; font-size: clamp(13px, 2vmin, 22px); }
+@keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.035); } }
+@keyframes sheen { 0%,72% { left: -60%; } 100% { left: 130%; } }
+@keyframes tapbob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+
+/* ===================== MAIN ===================== */
+.main { padding: clamp(16px, 2vw, 34px); gap: clamp(12px, 1.6vh, 22px); }
+.main-head { display: flex; align-items: center; justify-content: flex-start; gap: clamp(14px, 2vw, 30px); padding-right: clamp(150px, 17vw, 240px); }
+.home-btn { font: inherit; font-weight: 800; cursor: pointer; color: var(--ink); background: var(--glass-2); border: 1px solid var(--line); border-radius: 999px; padding: .6em 1.2em; font-size: clamp(14px, 1.4vw, 19px); }
+
+.stage { flex: 1; min-height: 0; display: flex; gap: clamp(12px, 1.6vw, 22px); }
+
+.map-card { flex: 1.85; min-width: 0; display: flex; flex-direction: column; border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); background: var(--glass); }
+.map-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: clamp(10px, 1.4vw, 16px) clamp(14px, 1.8vw, 22px); border-bottom: 1px solid var(--line); color: var(--muted); font-weight: 700; letter-spacing: .06em; font-size: clamp(12px, 1.3vw, 16px); text-transform: uppercase; }
+.map-card-head .legend .h { display: inline-flex; align-items: center; gap: .45em; text-transform: none; letter-spacing: 0; font-weight: 600; font-size: clamp(11px, 1.1vw, 14px); }
+.map-card-head .legend .h::before { content: ""; width: .8em; height: .8em; border-radius: 50%; background: var(--teal); }
+.map { flex: 1; min-height: 0; display: flex; padding: clamp(8px, 1.2vw, 18px); }
+.map svg { width: 100%; height: 100%; }
+
+/* info panel (right of the map) */
+.info-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; border-radius: var(--r-lg); border: 1px solid var(--line); box-shadow: var(--shadow); background: var(--glass); padding: clamp(14px, 1.5vw, 26px); overflow: hidden; }
+.info-empty { margin: auto; text-align: center; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: .8em; }
+.info-empty .big { font-size: clamp(40px, 5vw, 66px); }
+.info-empty .t1 { font-size: clamp(18px, 1.8vw, 26px); font-weight: 700; color: var(--ink); }
+.info-empty .t2 { font-size: clamp(13px, 1.3vw, 18px); }
+.info-sel { display: flex; flex-direction: column; gap: clamp(8px, 1.2vh, 16px); height: 100%; }
+.info-sel .top { display: flex; align-items: center; gap: clamp(12px, 1.4vw, 20px); }
+.info-sel .disc { flex: none; width: clamp(58px, 5vw, 92px); height: clamp(58px, 5vw, 92px); border-radius: 20px; display: grid; place-items: center; font-size: clamp(30px, 3.2vw, 54px); background: radial-gradient(120% 120% at 30% 20%, color-mix(in srgb, var(--c) 44%, transparent), color-mix(in srgb, var(--c) 12%, transparent)); border: 1px solid color-mix(in srgb, var(--c) 50%, transparent); }
+.info-sel .nm { font-size: clamp(24px, 2.6vw, 44px); font-weight: 800; line-height: 1.05; }
+.info-sel .cz { color: var(--muted); font-size: clamp(14px, 1.5vw, 22px); margin-top: .15em; }
+.info-sel .unit-big { display: flex; align-items: baseline; gap: .5em; }
+.info-sel .unit-big .lbl { font-size: clamp(11px, 1.1vw, 15px); color: var(--muted); letter-spacing: .14em; }
+.info-sel .unit-big .val { font-size: clamp(26px, 2.7vw, 46px); font-weight: 850; color: var(--c); }
+.info-sel .dirbox { margin-top: 2px; display: flex; gap: .7em; align-items: flex-start; padding: clamp(11px, 1.3vw, 18px); border-radius: var(--r-md); background: color-mix(in srgb, var(--c) 14%, transparent); border: 1px solid color-mix(in srgb, var(--c) 28%, transparent); font-size: clamp(13px, 1.3vw, 21px); font-weight: 600; line-height: 1.3; }
+.info-sel .dirbox .pin { font-size: 1.3em; flex: none; }
+
+/* shop row */
+.shoprow { flex: none; display: flex; gap: clamp(10px, 1.2vw, 18px); overflow-x: auto; padding: 2px clamp(2px, .5vw, 8px) 8px; height: clamp(150px, 22vh, 220px); scrollbar-width: none; }
+.shoprow::-webkit-scrollbar { display: none; }
+.shopcard { flex: 0 0 auto; width: clamp(160px, 15vw, 220px); display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; text-align: left; font: inherit; color: var(--ink); cursor: pointer; padding: clamp(12px, 1.2vw, 20px); border-radius: var(--r-md); overflow: hidden; position: relative;
+  background: radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--c) 16%, transparent), transparent 60%), var(--glass); border: 1px solid var(--line); box-shadow: var(--shadow); transition: transform .14s var(--ease), border-color .2s; }
+.shopcard:active { transform: scale(.95); }
+.shopcard.sel { border-color: var(--c); box-shadow: 0 0 0 2px var(--c), var(--shadow); }
+.shopcard .disc { width: clamp(46px, 4vw, 66px); height: clamp(46px, 4vw, 66px); border-radius: 16px; display: grid; place-items: center; font-size: clamp(26px, 2.4vw, 40px);
+  background: radial-gradient(120% 120% at 30% 20%, color-mix(in srgb, var(--c) 42%, transparent), color-mix(in srgb, var(--c) 12%, transparent)); border: 1px solid color-mix(in srgb, var(--c) 50%, transparent); }
+.shopcard .nm { font-weight: 800; font-size: clamp(14px, 1.3vw, 21px); line-height: 1.1; margin-top: .5em; }
+.shopcard .cz { color: var(--muted); font-size: clamp(11px, 1vw, 15px); margin-top: .1em; }
+.shopcard .unit { position: absolute; top: clamp(12px, 1.2vw, 20px); right: clamp(12px, 1.2vw, 20px); font-weight: 800; font-size: clamp(11px, 1vw, 15px); color: var(--c); padding: .26em .7em; border-radius: 999px; background: color-mix(in srgb, var(--c) 14%, transparent); border: 1px solid color-mix(in srgb, var(--c) 30%, transparent); }
+
+/* ===================== SVG FLOOR MAP ===================== */
+.fp-building { fill: var(--map-bg); stroke: var(--map-line); stroke-width: 2; }
+.fp-lanes rect { fill: var(--map-lane); }
+.fp-room { fill: var(--map-room); stroke: var(--map-room-line); stroke-width: 1.5; }
+.fp-room-label { fill: var(--map-room-label); font-size: 15px; font-weight: 600; text-anchor: middle; }
+.fp-unit-name { fill: var(--map-label); font-size: 29px; font-weight: 600; text-anchor: middle; }
+.fp-unit-icon { font-size: 46px; text-anchor: middle; }
+.fp-entrance-label { fill: var(--map-room-label); font-size: 19px; font-weight: 700; text-anchor: middle; letter-spacing: .04em; }
+.fp-route-bg { fill: none; stroke: var(--route-bg); stroke-width: 15; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }
+.fp-route { fill: none; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 22; animation: flow 1.1s linear infinite; filter: drop-shadow(0 0 6px currentColor); }
+@keyframes flow { to { stroke-dashoffset: -23; } }
+.fp-here-ring { fill: none; stroke: var(--teal); stroke-width: 4; animation: ring 1.9s ease-out infinite; }
+.fp-here-dot { fill: var(--teal); stroke: var(--map-bg); stroke-width: 4; }
+.fp-here-label { fill: var(--teal); font-size: 19px; font-weight: 800; text-anchor: middle; letter-spacing: .06em; }
+@keyframes ring { 0% { r: 13; opacity: .85; } 100% { r: 42; opacity: 0; } }
+
+/* 3D (isometric) labels */
+.fp3-room-label { fill: var(--map-room-label); font-size: 14px; font-weight: 600; text-anchor: middle; }
+.fp3-icon { font-size: 38px; text-anchor: middle; }
+.fp3-name { font-size: 26px; font-weight: 700; text-anchor: middle; }
+.fp3-code { font-size: 23px; font-weight: 800; text-anchor: start; }
+.fp-code { fill: var(--map-label); font-size: 27px; font-weight: 800; text-anchor: start; }
+
+/* ===================== cuisine filter chips ===================== */
+.filters { flex: none; display: flex; gap: clamp(8px, 1vw, 14px); overflow-x: auto; padding: 2px 2px 4px; scrollbar-width: none; }
+.filters::-webkit-scrollbar { display: none; }
+.chip { flex: 0 0 auto; font: inherit; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: .45em; color: var(--muted); background: var(--glass); border: 1px solid var(--line); border-radius: 999px; padding: clamp(8px,1vw,13px) clamp(15px,1.5vw,24px); font-size: clamp(14px,1.5vw,20px); transition: color .2s, background .2s, border-color .2s; }
+.chip.active { color: var(--on-gold); background: linear-gradient(135deg, var(--gold-1), var(--gold-2)); border-color: transparent; }
+.chip .em { font-size: 1.1em; }
+
+/* ===================== open / closed status ===================== */
+.status { display: inline-flex; align-items: center; gap: .4em; font-weight: 800; font-size: clamp(11px, 1vw, 15px); }
+.status::before { content: ""; width: .6em; height: .6em; border-radius: 50%; background: currentColor; }
+.status.open { color: #25c585; }
+.status.open::before { box-shadow: 0 0 8px #25c585; }
+.status.closed { color: var(--faint); }
+.shopcard .status { margin-top: .4em; }
+
+/* ===================== info panel: hours + order-ahead ===================== */
+.info-sel .meta-row { display: flex; align-items: center; gap: clamp(12px, 1.6vw, 24px); flex-wrap: wrap; }
+.info-sel .hours { color: var(--muted); font-size: clamp(13px, 1.4vw, 21px); display: inline-flex; align-items: center; gap: .4em; font-weight: 600; }
+.info-sel .order-hint { display: inline-flex; align-items: center; gap: .5em; color: var(--muted); font-size: clamp(13px, 1.3vw, 20px); }
+
+/* ===================== facility footer ===================== */
+.facility-foot { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 14px; color: var(--muted); font-size: clamp(12px, 1.2vw, 17px); padding: clamp(8px,1vh,14px) 4px 0; border-top: 1px solid var(--line); }
+.facility-foot .left { display: flex; align-items: center; gap: clamp(12px, 1.6vw, 26px); flex-wrap: wrap; }
+.facility-foot .left span { display: inline-flex; align-items: center; gap: .4em; }
+.facility-foot b { color: var(--ink); font-weight: 800; }
+.facility-foot .help { color: var(--gold-1); font-weight: 600; }
+
+/* ===================== uploaded logos (circle-cropped) ===================== */
+.medallion img { width: 76%; height: 76%; object-fit: contain; display: block; }
+.disc img { width: 80%; height: 80%; object-fit: contain; display: block; }
+.disc.has-logo { background: #fff; border-color: rgba(0,0,0,.12); border-radius: 50%; overflow: hidden; }
+
+/* ===================== vacant / unoccupied units ===================== */
+.shopcard.vacant { border-style: dashed; opacity: .82; }
+.shopcard.vacant .disc { background: var(--glass-2); border: 1px dashed var(--line); color: var(--muted); font-weight: 700; }
+.shopcard.vacant .nm { color: var(--muted); }
+.shopcard.vacant .cz { color: var(--faint); letter-spacing: .12em; font-weight: 800; font-size: clamp(10px, .95vw, 14px); }
+.shopcard.vacant .unit { color: var(--muted); background: var(--glass); border-color: var(--line); }
+.shopcard.vacant.sel { box-shadow: 0 0 0 2px var(--muted), var(--shadow); border-color: var(--muted); }
+
+/* ===================== accessibility ===================== */
+:focus-visible { outline: 3px solid var(--gold-1); outline-offset: 3px; border-radius: 8px; }
+.fp3-unit, .fp-unit-tap { cursor: pointer; }
+
+/* ===================== portrait fallback ===================== */
+@media (max-aspect-ratio: 1/1) {
+  .stage { flex-direction: column; }
+  .map-card { flex: 1.4; }
+  .info-panel { flex: none; }
+  .info-sel { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .info-sel .dirbox { margin-top: 0; flex: 1 1 100%; }
+  .main-head { padding-right: clamp(150px, 28vw, 240px); }
+}

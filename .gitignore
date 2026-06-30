@@ -1,0 +1,13 @@
+# OS noise
+.DS_Store
+
+# --- Internal artifacts: kept LOCAL, never published to the public site/repo ---
+# GitHub Pages serves the repo root, so anything here would be web-reachable.
+# (Comments must be on their own line — git does not support trailing # comments.)
+docs/
+supabase/
+proposal.html
+S13-Directory-Board-Proposal.pdf
+design-lab.html
+door-styles.html
+img/s13-plan.png

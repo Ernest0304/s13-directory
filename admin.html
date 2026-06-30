@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>S13 Kitchen Directory — Admin</title>
+  <link rel="stylesheet" href="css/admin.css?v=2" />
+</head>
+<body>
+  <div class="admin">
+    <header class="adm-head">
+      <div class="brand"><span class="badge">S13</span><span><b>Kitchen Directory</b> <span class="sub">Admin</span></span></div>
+      <div class="head-actions">
+        <a class="link" href="index.html" target="_blank" rel="noopener">View board ↗</a>
+        <button id="logoutBtn" class="btn ghost hidden">Log out</button>
+      </div>
+    </header>
+
+    <!-- ===== LOGIN ===== -->
+    <section id="login" class="login">
+      <div class="login-card">
+        <div class="login-icon">🔒</div>
+        <h1>Admin access</h1>
+        <p>Enter the shared password to manage the S13 directory.</p>
+        <input id="pwd" type="password" placeholder="Password" autocomplete="current-password" />
+        <button id="unlockBtn" class="btn">Unlock</button>
+        <div id="loginErr" class="err"></div>
+      </div>
+    </section>
+
+    <!-- ===== EDITOR ===== -->
+    <section id="editor" class="editor hidden">
+      <nav class="adm-tabs">
+        <button class="tab active" data-tab="units">Kitchens</button>
+        <button class="tab" data-tab="site">Site settings</button>
+      </nav>
+      <div id="tab-units" class="editor-grid">
+        <aside class="unit-list" id="unitList"></aside>
+        <div class="unit-form" id="unitForm"></div>
+      </div>
+      <div id="tab-site" class="site-form hidden"></div>
+    </section>
+
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/data.js?v=6"></script>
+  <script src="js/db.js?v=2"></script>
+  <script src="js/admin.js?v=3"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "name": "Smart City Kitchens — S13 Directory",
+  "short_name": "S13 Directory",
+  "description": "Touchscreen kitchen wayfinding directory for Smart City Kitchens S13 (JTC Bedok Food City).",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "id": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#07080c",
+  "theme_color": "#0b0d12",
+  "categories": ["food", "navigation", "utilities"],
+  "icons": [
+    {
+      "src": "img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

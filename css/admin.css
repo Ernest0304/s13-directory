@@ -1,0 +1,96 @@
+/* =============================================================================
+ * admin.css — S13 Kitchen Directory admin (staff CMS). Clean light UI.
+ * ========================================================================== */
+:root {
+  --bg: #f4f6fa; --card: #ffffff; --ink: #1b2433; --muted: #5b6678; --line: #e2e7ef;
+  --gold-1: #f3b53f; --gold-2: #e2902c; --on-gold: #2a1a04; --teal: #18a673; --red: #d8503e;
+  --r: 14px; --shadow: 0 10px 30px -14px rgba(28,45,80,.30);
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans SC", Roboto, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); -webkit-font-smoothing: antialiased; }
+.hidden { display: none !important; }
+.admin { max-width: 1100px; margin: 0 auto; padding: 18px clamp(14px, 3vw, 28px) 60px; }
+
+/* header */
+.adm-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 0 18px; }
+.brand { display: flex; align-items: center; gap: 12px; font-size: 19px; }
+.brand .badge { background: linear-gradient(140deg, var(--gold-1), var(--gold-2)); color: var(--on-gold); font-weight: 900; border-radius: 11px; padding: 8px 11px; }
+.brand .sub { color: var(--muted); font-weight: 600; }
+.head-actions { display: flex; align-items: center; gap: 14px; }
+.link { color: var(--muted); text-decoration: none; font-weight: 600; }
+.link:hover { color: var(--ink); }
+
+/* buttons */
+.btn { font: inherit; font-weight: 800; cursor: pointer; border: none; border-radius: 11px; padding: 12px 22px; color: var(--on-gold); background: linear-gradient(135deg, var(--gold-1), var(--gold-2)); box-shadow: var(--shadow); }
+.btn:disabled { opacity: .55; cursor: default; }
+.btn.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); box-shadow: none; }
+
+/* login */
+.login { display: grid; place-items: center; padding-top: clamp(40px, 12vh, 130px); }
+.login-card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); padding: 34px; width: min(380px, 92vw); text-align: center; }
+.login-icon { font-size: 40px; }
+.login-card h1 { font-size: 26px; margin: 10px 0 6px; }
+.login-card p { color: var(--muted); margin-bottom: 18px; }
+.login-card input { width: 100%; font: inherit; font-size: 17px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 11px; margin-bottom: 12px; }
+.login-card .btn { width: 100%; }
+.err { color: var(--red); font-weight: 600; margin-top: 12px; min-height: 1.2em; }
+
+/* editor */
+.editor { display: block; }
+.adm-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+.tab { font: inherit; font-weight: 800; cursor: pointer; border: 1px solid var(--line); background: #fff; color: var(--muted); border-radius: 999px; padding: 9px 20px; }
+.tab:hover { color: var(--ink); }
+.tab.active { background: #fdf3e0; color: var(--ink); border-color: #f0d9a8; }
+.editor-grid { display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: start; }
+@media (max-width: 760px) { .editor-grid { grid-template-columns: 1fr; } }
+
+.unit-list { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: 8px; max-height: 78vh; overflow-y: auto; }
+.ul-item { width: 100%; display: flex; align-items: center; gap: 10px; font: inherit; text-align: left; cursor: pointer; background: transparent; border: none; border-radius: 10px; padding: 11px 12px; }
+.ul-item:hover { background: #f1f4f9; }
+.ul-item.active { background: #fdf3e0; }
+.ul-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.ul-dot.on { background: var(--teal); box-shadow: 0 0 7px var(--teal); }
+.ul-dot.off { background: #c2cad6; }
+.ul-code { font-weight: 800; width: 44px; flex: none; }
+.ul-name { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.unit-form { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: clamp(16px, 2.4vw, 28px); }
+.form-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+.form-head h2 { font-size: 30px; }
+.switch { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; cursor: pointer; }
+.switch input { width: 20px; height: 20px; accent-color: var(--teal); }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; margin-bottom: 18px; }
+@media (max-width: 560px) { .grid2 { grid-template-columns: 1fr; } }
+.grid2 label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; font-size: 14px; color: var(--muted); }
+.grid2 input, .grid2 select { font: inherit; font-size: 16px; color: var(--ink); padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.colorrow, .hoursrow { display: flex; align-items: center; gap: 8px; }
+.colorrow input[type=color] { width: 46px; height: 44px; padding: 2px; border-radius: 10px; border: 1px solid var(--line); background: #fff; }
+.colorrow input[type=text] { flex: 1; }
+.hoursrow input { flex: 1; }
+
+.upload { border: 1px dashed var(--line); border-radius: 12px; padding: 14px; }
+.up-label { font-weight: 800; font-size: 14px; color: var(--muted); margin-bottom: 10px; }
+.up-label .hint { display: block; font-weight: 500; color: #9aa3b2; font-size: 12px; margin-top: 3px; }
+.preview { height: 92px; border-radius: 10px; background: #f1f4f9; display: grid; place-items: center; overflow: hidden; margin-bottom: 10px; }
+.preview.wide { height: 110px; }
+.preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.preview .noimg { color: #9aa3b2; font-size: 14px; }
+.preview.logo { height: 110px; }
+.preview.logo img { max-width: 96px; max-height: 96px; object-fit: contain; }
+.upload input[type=file] { font: inherit; font-size: 13px; width: 100%; }
+
+.form-foot { display: flex; justify-content: flex-end; padding-top: 6px; }
+
+/* site settings form */
+.site-form { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: clamp(16px, 2.4vw, 28px); }
+.site-form h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 26px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.site-form h3:first-child { margin-top: 0; }
+.site-form .grid2 { margin-bottom: 4px; }
+.grid2 label .hint { font-weight: 500; color: #9aa3b2; font-size: 12px; }
+
+/* toast */
+.toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px); opacity: 0; pointer-events: none; background: #11203a; color: #fff; font-weight: 700; padding: 13px 22px; border-radius: 999px; box-shadow: var(--shadow); transition: opacity .25s, transform .25s; z-index: 50; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.bad { background: var(--red); }
