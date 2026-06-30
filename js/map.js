@@ -53,7 +53,7 @@ const MapKiosk = (function () {
         <rect x="${c.frontX0}" y="${c.frontY - 15}" width="${c.frontX1 - c.frontX0}" height="30" rx="15"/>
         <rect x="${c.k1k2X - 15}" y="${c.k1k2Y0}" width="30" height="${c.k1k2Y1 - c.k1k2Y0}" rx="15"/>
         <rect x="${c.midX - 12}" y="${c.midY0}" width="24" height="${c.midY1 - c.midY0}" rx="11"/></g>`;
-    let rooms = `<rect class="fp-room" x="${FP.lobby.x}" y="${FP.lobby.y}" width="${FP.lobby.w}" height="${FP.lobby.h}" rx="14"/>`;
+    let rooms = "";
     for (const s of FP.service) rooms += `<rect class="fp-room" x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="10"/>
         <text class="fp-room-label" x="${s.x + s.w / 2}" y="${s.y + s.h / 2 + 5}">${I18N[s.key][lang]}</text>`;
     const doorCol2 = bright ? "#48526a" : "#aeb8c6";
@@ -83,10 +83,10 @@ const MapKiosk = (function () {
       <defs>${glowDefs(brand)}</defs>
       <rect class="fp-building" x="20" y="20" width="${W - 40}" height="${H - 40}" rx="30" filter="url(#fpSoft)"/>
       ${lanes}${rooms}${doors2d}${units}${route}
-      <text class="fp-entrance-label" x="${FP.entrance.x}" y="${FP.entrance.y + 5}">▾ ${I18N.entrance[lang]}</text>
       <text class="fp-entrance-label" x="${FP.k1k2.x}" y="${FP.k1k2.y + 22}">▴ ${I18N.k1k2Entrance[lang]}</text>
-      <circle class="fp-here-ring" cx="${k.x}" cy="${k.y}"/><circle class="fp-here-dot" cx="${k.x}" cy="${k.y}" r="12"/>
-      <text class="fp-here-label" x="${k.x}" y="${k.y + 38}">${I18N.youAreHere[lang]}</text></svg>`;
+      <g><rect x="${k.x - 62}" y="${k.y - 26}" width="124" height="56" rx="11" fill="#ffffff" stroke="var(--map-line)" stroke-width="1.5"/>
+        <circle class="fp-here-dot" cx="${k.x}" cy="${k.y - 6}" r="6"/>
+        <text class="fp-here-label" x="${k.x}" y="${k.y + 18}" style="font-size:13px">${I18N.youAreHere[lang]}</text></g></svg>`;
   }
 
   /* ======================= 3D (isometric, morphs to top-down) ============ */
@@ -155,7 +155,6 @@ const MapKiosk = (function () {
     // walkways: lighter raised strips + a dashed centre-line so they clearly read as corridors
     const lanes = [[c.hX0, c.hY - 22, c.hX1 - c.hX0, 44], [c.vX - 22, c.vY0, 44, c.vY1 - c.vY0], [c.lX0, c.lY - 21, c.lX1 - c.lX0, 42], [c.spurX - 22, c.hY, 44, c.frontY - c.hY], [c.frontX0, c.frontY - 21, c.frontX1 - c.frontX0, 42], [c.k1k2X - 21, c.k1k2Y0, 42, c.k1k2Y1 - c.k1k2Y0], [c.midX - 13, c.midY0, 26, c.midY1 - c.midY0]];
     for (const [x, y, w, h] of lanes) s += `<polygon points="${qp(x, y, w, h, 1)}" style="fill:${laneFill}"/>`;
-    s += `<polygon points="${qp(FP.lobby.x, FP.lobby.y, FP.lobby.w, FP.lobby.h, 0)}" style="fill:${laneFill};stroke:${laneStroke}"/>`;
     for (const r of FP.service) { s += `<polygon points="${qp(r.x, r.y, r.w, r.h, 0)}" style="fill:${roomFill};stroke:${floorStroke}"/>`;
       const cc = pj(r.x + r.w / 2, r.y + r.h / 2, 0, C); s += `<text class="fp3-room-label" x="${cc[0].toFixed(1)}" y="${cc[1].toFixed(1)}">${I18N[r.key][lang]}</text>`; }
     for (const d of (FP.doors || [])) s += doorSVG(d, (x, y) => pj(x, y, 1, C), doorCol);
@@ -195,8 +194,9 @@ const MapKiosk = (function () {
     const k2p = pj(FP.k1k2.x, FP.k1k2.y, 0, C);
     s += `<text class="fp3-room-label" x="${k2p[0].toFixed(1)}" y="${(k2p[1] + 16).toFixed(1)}">▴ ${I18N.k1k2Entrance[lang]}</text>`;
     const kp = pj(k.x, k.y, 6, C);
-    s += `<circle class="fp-here-ring" cx="${kp[0].toFixed(1)}" cy="${kp[1].toFixed(1)}"/><circle class="fp-here-dot" cx="${kp[0].toFixed(1)}" cy="${kp[1].toFixed(1)}" r="11"/>
-      <text class="fp-here-label" x="${kp[0].toFixed(1)}" y="${(kp[1] + 30).toFixed(1)}">${I18N.youAreHere[lang]}</text>`;
+    s += `<rect x="${(kp[0] - 58).toFixed(1)}" y="${(kp[1] - 24).toFixed(1)}" width="116" height="52" rx="10" fill="#ffffff" stroke="${laneStroke}" stroke-width="1.5"/>
+      <circle class="fp-here-dot" cx="${kp[0].toFixed(1)}" cy="${(kp[1] - 5).toFixed(1)}" r="6"/>
+      <text class="fp-here-label" x="${kp[0].toFixed(1)}" y="${(kp[1] + 16).toFixed(1)}" style="font-size:13px">${I18N.youAreHere[lang]}</text>`;
 
     container.innerHTML = `<svg viewBox="${viewBoxFor(C)}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="3D floor plan"><defs>${glowDefs(brand, "fp3Glow")}</defs>${s}</svg>`;
   }

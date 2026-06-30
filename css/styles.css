@@ -29,8 +29,8 @@
   --bg: #eaeef4; --ink: #1b2433; --muted: #5b6678; --faint: #8a93a4;
   --line: rgba(20,33,55,.12); --glass: #ffffff; --glass-2: #ffffff;
   --teal: #0fae84; --shadow: 0 18px 44px -16px rgba(28,45,80,.28);
-  --map-bg: #f7f9fc; --map-line: #c8d2e0; --map-lane: #ffffff;
-  --map-room: #eef2f8; --map-room-line: #d6deea;
+  --map-bg: #cdd6e3; --map-line: #b9c4d4; --map-lane: #ffffff;
+  --map-room: #c0cad9; --map-room-line: #b3bdcc;
   --map-unit: #ffffff; --map-unit-line: #d6deea;
   --map-label: #4a5568; --map-room-label: #8a93a4; --route-bg: #ffffff;
   --bg-grad: radial-gradient(120% 70% at 82% 4%, rgba(230,155,58,.16), transparent 58%),

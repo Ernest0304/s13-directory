@@ -27,7 +27,8 @@ const I18N = {
   floorPlan:      { en: "Floor Plan",             zh: "平面图" },
   entrance:       { en: "Entrance",               zh: "入口" },
   k1k2Entrance:   { en: "K1 & 2 entrance",        zh: "K1 & 2 入口" },
-  loadingBay:     { en: "Loading Bay",            zh: "卸货区" },
+  loadingBay:     { en: "loading bay",            zh: "卸货区" },
+  carPark:        { en: "car park",               zh: "停车场" },
   dryStore:       { en: "Dry Store",              zh: "干货仓" },
   toilet:         { en: "Toilet",                 zh: "洗手间" },
   matWash:        { en: "Mat Wash",               zh: "洗垫间" },
@@ -112,7 +113,7 @@ const FLOORPLAN = {
     k1k2X: 728, k1k2Y0: 510, k1k2Y1: 762,        // vertical walkway BESIDE K-01 (lower corridor down to the K1&2 entrance)
   },
 
-  kiosk:    { x: 1017, y: 650 },       // the "You are here" point (right lobby)
+  kiosk:    { x: 1017, y: 600 },       // the "You are here" kiosk marker (small white box)
   entrance: { x: 1017, y: 712 },
   k1k2:     { x: 728, y: 770 },        // the "K1 & 2 only" bottom entrance (foot of the walkway beside K-01)
 
@@ -140,14 +141,14 @@ const FLOORPLAN = {
     { x: 898, y: 414, w: 94, h: 58, key: "matWash" },
     { x: 1046, y: 290, w: 92, h: 58, key: "dryStore" },
     { x: 796, y: 540, w: 140, h: 200, key: "loadingBay" },
+    { x: 1086, y: 628, w: 104, h: 108, key: "carPark" },
   ],
 
   // doorways drawn as a swing symbol (hinge x,y; w = leaf length; rot = open angle°)
   doors: [
-    { x: 1000, y: 562, w: 34, rot: -90 },   // main entrance door (corridor <-> lobby, by "you are here")
     { x: 678, y: 118, w: 22, rot: 90 },      // back door inside the K-09/K-10 walkway
-    { x: 706, y: 758, w: 44, rot: 90 },      // K1 & 2 bottom entrance (on the walkway beside K-01)
-    { x: 280, y: 544, w: 68, rot: 180 },     // door IN the wall between K-03 and K-02 (they share a wall, not a corridor)
+    { x: 706, y: 612, w: 44, rot: 90 },      // K1 & 2 entrance (on the walkway beside K-01, mid-height)
+    { x: 278, y: 486, w: 38, rot: 180 },     // K-03 entrance door (on the lower corridor, at K-03's top-right)
   ],
 
   // the entrance lobby (open area on the right where the kiosk stands)
