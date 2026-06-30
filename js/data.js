@@ -26,6 +26,8 @@ const I18N = {
   unit:           { en: "UNIT",                   zh: "单元" },
   floorPlan:      { en: "Floor Plan",             zh: "平面图" },
   entrance:       { en: "Entrance",               zh: "入口" },
+  k1k2Entrance:   { en: "K1 & 2 entrance",        zh: "K1 & 2 入口" },
+  loadingBay:     { en: "Loading Bay",            zh: "卸货区" },
   dryStore:       { en: "Dry Store",              zh: "干货仓" },
   toilet:         { en: "Toilet",                 zh: "洗手间" },
   matWash:        { en: "Mat Wash",               zh: "洗垫间" },
@@ -106,10 +108,13 @@ const FLOORPLAN = {
     spurX: 1017,                       // entrance spur (kiosk up to main corridor)
     dropX: 835,                        // drop point to reach the lower corridor
     midX: 689, midY0: 44, midY1: 258,  // small walkway between K-09 and K-10 (holds the back door)
+    frontY: 762, frontX0: 590, frontX1: 1017,   // bottom/front corridor: kiosk -> K1&2 entrance (past Loading Bay)
+    k1k2X: 612, k1k2Y0: 728, k1k2Y1: 762,        // short link up from the front corridor into K-01/K-02
   },
 
   kiosk:    { x: 1017, y: 650 },       // the "You are here" point (right lobby)
   entrance: { x: 1017, y: 712 },
+  k1k2:     { x: 612, y: 770 },        // the "K1 & 2 only" bottom entrance
 
   // unit footprints (x, y, w, h) + which corridor they face
   units: {
@@ -123,8 +128,8 @@ const FLOORPLAN = {
     K12: { x: 1048, y: 44,  w: 156, h: 186, face: "down"  },
     K06: { x: 320,  y: 294, w: 232, h: 168, face: "up"    },
     K07: { x: 574,  y: 294, w: 250, h: 168, face: "up"    },
-    K02: { x: 320,  y: 528, w: 212, h: 200, face: "lower" },
-    K01: { x: 556,  y: 528, w: 212, h: 200, face: "lower" },
+    K02: { x: 330,  y: 528, w: 214, h: 200, face: "k1k2" },
+    K01: { x: 544,  y: 528, w: 214, h: 200, face: "k1k2" },
   },
 
   // service rooms (from the real plan / Ernest's sketch): toilets + mat wash
@@ -138,9 +143,10 @@ const FLOORPLAN = {
 
   // doorways drawn as a swing symbol (hinge x,y; w = leaf length; rot = open angle°)
   doors: [
-    { x: 1000, y: 562, w: 34, rot: -90 },   // entrance door (corridor <-> lobby, by "you are here")
+    { x: 1000, y: 562, w: 34, rot: -90 },   // main entrance door (corridor <-> lobby, by "you are here")
     { x: 678, y: 118, w: 22, rot: 90 },      // back door inside the K-09/K-10 walkway
-    { x: 196, y: 528, w: 30, rot: 90 },      // K-03 door (opens from the lower corridor into K-03)
+    { x: 584, y: 762, w: 56, rot: 90 },      // K1 & 2 bottom entrance (on the front corridor)
+    { x: 322, y: 566, w: 80, rot: 180, fire: true },  // fire door between K-02 and K-03 (normally closed)
   ],
 
   // the entrance lobby (open area on the right where the kiosk stands)

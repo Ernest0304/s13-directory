@@ -14,11 +14,13 @@ const MapKiosk = (function () {
   /* ---- shared: walking route + directions (top-down coords) ------------- */
   function routePoints(id) {
     const u = FP.units[id], c = FP.corridor, k = FP.kiosk, ctr = center(u);
+    if (u.face === "k1k2")       // K-01/K-02: out the front, left past the loading bay, in via the dedicated K1&2 entrance
+      return [[k.x, k.y], [k.x, c.frontY], [c.k1k2X, c.frontY], [c.k1k2X, u.y + u.h], [ctr.x, u.y + u.h]];
     const pts = [[k.x, k.y], [c.spurX, c.hY]];
     if (u.face === "down")       pts.push([ctr.x, c.hY], [ctr.x, u.y + u.h]);
     else if (u.face === "up")    pts.push([ctr.x, c.hY], [ctr.x, u.y]);
     else if (u.face === "right") pts.push([c.vX, c.hY], [c.vX, ctr.y], [u.x + u.w, ctr.y]);
-    else                         pts.push([c.vX, c.hY], [c.vX, c.lY], [ctr.x, c.lY], [ctr.x, u.y]);   // cold kitchens (K-01/K-02): down the left/centre corridor, in from the middle
+    else                         pts.push([c.vX, c.hY], [c.vX, c.lY], [ctr.x, c.lY], [ctr.x, u.y]);   // cold kitchens: down the left/centre corridor, in from the middle
     return pts;
   }
   function zoneText(face, lang) {
@@ -45,7 +47,9 @@ const MapKiosk = (function () {
         <rect x="${c.hX0}" y="${c.hY - 16}" width="${c.hX1 - c.hX0}" height="32" rx="16"/>
         <rect x="${c.vX - 16}" y="${c.vY0}" width="32" height="${c.vY1 - c.vY0}" rx="16"/>
         <rect x="${c.lX0}" y="${c.lY - 15}" width="${c.lX1 - c.lX0}" height="30" rx="15"/>
-        <rect x="${c.spurX - 16}" y="${c.hY}" width="32" height="${k.y - c.hY}" rx="16"/>
+        <rect x="${c.spurX - 16}" y="${c.hY}" width="32" height="${c.frontY - c.hY}" rx="16"/>
+        <rect x="${c.frontX0}" y="${c.frontY - 15}" width="${c.frontX1 - c.frontX0}" height="30" rx="15"/>
+        <rect x="${c.k1k2X - 15}" y="${c.k1k2Y0}" width="30" height="${c.k1k2Y1 - c.k1k2Y0}" rx="15"/>
         <rect x="${c.midX - 12}" y="${c.midY0}" width="24" height="${c.midY1 - c.midY0}" rx="11"/></g>`;
     let rooms = `<rect class="fp-room" x="${FP.lobby.x}" y="${FP.lobby.y}" width="${FP.lobby.w}" height="${FP.lobby.h}" rx="14"/>`;
     for (const s of FP.service) rooms += `<rect class="fp-room" x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="10"/>
@@ -78,6 +82,8 @@ const MapKiosk = (function () {
       <rect class="fp-building" x="20" y="20" width="${W - 40}" height="${H - 40}" rx="30" filter="url(#fpSoft)"/>
       ${lanes}${rooms}${doors2d}${units}${route}
       <text class="fp-entrance-label" x="${FP.entrance.x}" y="${FP.entrance.y + 5}">▾ ${I18N.entrance[lang]}</text>
+      <text class="fp-room-label" x="${FP.lobby.x + 86}" y="${FP.lobby.y + 46}">${I18N.loadingBay[lang]}</text>
+      <text class="fp-entrance-label" x="${FP.k1k2.x}" y="${FP.k1k2.y + 22}">▴ ${I18N.k1k2Entrance[lang]}</text>
       <circle class="fp-here-ring" cx="${k.x}" cy="${k.y}"/><circle class="fp-here-dot" cx="${k.x}" cy="${k.y}" r="12"/>
       <text class="fp-here-label" x="${k.x}" y="${k.y + 38}">${I18N.youAreHere[lang]}</text></svg>`;
   }
@@ -146,7 +152,7 @@ const MapKiosk = (function () {
 
     let s = `<polygon points="${qp(0, 0, W, H, 0)}" style="fill:${floorFill};stroke:${floorStroke};stroke-width:2"/>`;
     // walkways: lighter raised strips + a dashed centre-line so they clearly read as corridors
-    const lanes = [[c.hX0, c.hY - 22, c.hX1 - c.hX0, 44], [c.vX - 22, c.vY0, 44, c.vY1 - c.vY0], [c.lX0, c.lY - 21, c.lX1 - c.lX0, 42], [c.spurX - 22, c.hY, 44, k.y - c.hY], [c.midX - 13, c.midY0, 26, c.midY1 - c.midY0]];
+    const lanes = [[c.hX0, c.hY - 22, c.hX1 - c.hX0, 44], [c.vX - 22, c.vY0, 44, c.vY1 - c.vY0], [c.lX0, c.lY - 21, c.lX1 - c.lX0, 42], [c.spurX - 22, c.hY, 44, c.frontY - c.hY], [c.frontX0, c.frontY - 21, c.frontX1 - c.frontX0, 42], [c.k1k2X - 21, c.k1k2Y0, 42, c.k1k2Y1 - c.k1k2Y0], [c.midX - 13, c.midY0, 26, c.midY1 - c.midY0]];
     for (const [x, y, w, h] of lanes) s += `<polygon points="${qp(x, y, w, h, 1)}" style="fill:${laneFill}"/>`;
     s += `<polygon points="${qp(FP.lobby.x, FP.lobby.y, FP.lobby.w, FP.lobby.h, 0)}" style="fill:${laneFill};stroke:${laneStroke}"/>`;
     for (const r of FP.service) { s += `<polygon points="${qp(r.x, r.y, r.w, r.h, 0)}" style="fill:${roomFill};stroke:${floorStroke}"/>`;
@@ -185,6 +191,10 @@ const MapKiosk = (function () {
       s += `<polyline class="fp-route-bg" points="${rp}"/><polyline class="fp-route" points="${rp}" style="stroke:${brand}"/>
             <circle cx="${ep[0].toFixed(1)}" cy="${ep[1].toFixed(1)}" r="12" style="fill:${brand};stroke:#fff;stroke-width:3"/>`; }
 
+    const lbp = pj(FP.lobby.x + 86, FP.lobby.y + 46, 0, C);
+    s += `<text class="fp3-room-label" x="${lbp[0].toFixed(1)}" y="${lbp[1].toFixed(1)}">${I18N.loadingBay[lang]}</text>`;
+    const k2p = pj(FP.k1k2.x, FP.k1k2.y, 0, C);
+    s += `<text class="fp3-room-label" x="${k2p[0].toFixed(1)}" y="${(k2p[1] + 16).toFixed(1)}">▴ ${I18N.k1k2Entrance[lang]}</text>`;
     const kp = pj(k.x, k.y, 6, C);
     s += `<circle class="fp-here-ring" cx="${kp[0].toFixed(1)}" cy="${kp[1].toFixed(1)}"/><circle class="fp-here-dot" cx="${kp[0].toFixed(1)}" cy="${kp[1].toFixed(1)}" r="11"/>
       <text class="fp-here-label" x="${kp[0].toFixed(1)}" y="${(kp[1] + 30).toFixed(1)}">${I18N.youAreHere[lang]}</text>`;
@@ -221,6 +231,8 @@ const MapKiosk = (function () {
     const tick = (t) => { const cx = d.x + d.w * Math.cos(a1) * t, cy = d.y + d.w * Math.sin(a1) * t,
         A = prj(cx - 5 * Math.cos(ap), cy - 5 * Math.sin(ap)), B = prj(cx + 5 * Math.cos(ap), cy + 5 * Math.sin(ap));
       return `<line x1="${A[0].toFixed(1)}" y1="${A[1].toFixed(1)}" x2="${B[0].toFixed(1)}" y2="${B[1].toFixed(1)}" stroke="${color}" stroke-width="3" stroke-linecap="round" opacity=".75"/>`; };
+    if (d.fire)  // normally-closed FIRE door: one solid red bar across the opening (no gap) + jamb posts
+      return tick(0) + tick(1) + seg(0.04, 0.96, 8, "#7a2417", .9) + seg(0.04, 0.96, 4.5, "#d8442b", 1);
     // jamb posts at both ends, then two glass panels (dark frame under, light glass over) with a centre gap
     return tick(0) + tick(1)
       + seg(0.06, 0.46, 7, color, .85) + seg(0.54, 0.94, 7, color, .85)
