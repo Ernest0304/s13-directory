@@ -121,7 +121,7 @@ const FLOORPLAN = {
   units: {
     K05: { x: 56,   y: 44,  w: 214, h: 186, face: "right" },
     K04: { x: 56,   y: 294, w: 214, h: 178, face: "right" },
-    K03: { x: 16,   y: 482, w: 262, h: 258, face: "lower" },
+    K03: { x: 26,   y: 512, w: 240, h: 228, face: "lower" },
     K08: { x: 306,  y: 44,  w: 164, h: 186, face: "down"  },
     K09: { x: 492,  y: 44,  w: 186, h: 186, face: "down"  },
     K10: { x: 700,  y: 44,  w: 156, h: 186, face: "down"  },
