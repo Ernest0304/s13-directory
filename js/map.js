@@ -84,8 +84,8 @@ const MapKiosk = (function () {
 
   /* ======================= 3D (isometric, morphs to top-down) ============ */
   const D2R = Math.PI / 180, PIVOT = { x: FP.viewBox.w / 2, y: FP.viewBox.h / 2 };
-  const GAP = 16;              // floor gap between a kitchen block and the walkway
-  const BH = 40;              // block extrude height (world units)
+  const GAP = 9;               // floor gap between a kitchen block and the walkway
+  const BH = 48;              // block extrude height (world units)
   const WALL_SIGN = -1;       // draw only the camera-facing walls (front + side), not the hidden back ones
   function cam(aDeg, bDeg, scale) { const a = aDeg * D2R, b = bDeg * D2R; return { sx: scale, sy: scale * Math.sin(b), zk: scale * Math.cos(b), cosA: Math.cos(a), sinA: Math.sin(a) }; }
   const CAM_ISO = cam(30, 40, 1.0), CAM_TOP = cam(0, 90, 1.28);
@@ -106,8 +106,8 @@ const MapKiosk = (function () {
     const ext = (p) => { if (p[0] < mnX) mnX = p[0]; if (p[1] < mnY) mnY = p[1]; if (p[0] > mxX) mxX = p[0]; if (p[1] > mxY) mxY = p[1]; };
     for (const [x, y] of [[0, 0], [FP.viewBox.w, 0], [FP.viewBox.w, FP.viewBox.h], [0, FP.viewBox.h]]) ext(pj(x, y, 0, C));
     for (const u of Object.values(FP.units)) for (const [cx, cy] of [[u.x, u.y], [u.x + u.w, u.y], [u.x + u.w, u.y + u.h], [u.x, u.y + u.h]]) ext(pj(cx, cy, BH * 1.4, C));
-    const PAD = 24;
-    return `${(mnX - PAD).toFixed(1)} ${(mnY - PAD).toFixed(1)} ${(mxX - mnX + 2 * PAD).toFixed(1)} ${(mxY - mnY + PAD + 46).toFixed(1)}`;
+    const PAD = 8;
+    return `${(mnX - PAD).toFixed(1)} ${(mnY - PAD).toFixed(1)} ${(mxX - mnX + 2 * PAD).toFixed(1)} ${(mxY - mnY + PAD + 30).toFixed(1)}`;
   }
   function render3D(container, id, lang, theme) {
     const key = (id && (kitchenOf(id) || {}).occupied) ? "top" : "iso";
@@ -170,13 +170,13 @@ const MapKiosk = (function () {
       const ct = pj(x0 + (x1 - x0) / 2, y0 + (y1 - y0) / 2, zTop, C), txt = idealText(top), cp = pj(x0 + 14, y0 + 22, zTop, C), code = uid.replace("K", "K-");
       let inner;
       if (occ) {
-        const lr = Math.round(42 * C.sy);   // logo scales with the camera so it stays ~half the block
+        const lr = Math.round(48 * C.sy);   // logo scales with the camera so it stays ~half the block
         const ico = kk.logo
           ? logoOnMap(kk.logo, ct[0], ct[1] - lr * 0.26, lr)
           : `<text class="fp3-icon" x="${ct[0].toFixed(1)}" y="${(ct[1] - lr * 0.16).toFixed(1)}">${kk.icon}</text>`;
-        inner = `<text class="fp3-code" x="${cp[0].toFixed(1)}" y="${cp[1].toFixed(1)}" style="fill:${txt};opacity:.6">${code}</text>${ico}<text class="fp3-name" x="${ct[0].toFixed(1)}" y="${(ct[1] + lr * 0.72 + 25).toFixed(1)}" style="fill:${txt};font-size:${fitSize(kk.name[lang], 26, u.w - 34)}px">${kk.name[lang]}</text>`;
+        inner = `<text class="fp3-code" x="${cp[0].toFixed(1)}" y="${cp[1].toFixed(1)}" style="fill:${txt};opacity:.6">${code}</text>${ico}<text class="fp3-name" x="${ct[0].toFixed(1)}" y="${(ct[1] + lr * 0.72 + 25).toFixed(1)}" style="fill:${txt};font-size:${fitSize(kk.name[lang], 29, u.w - 30)}px">${kk.name[lang]}</text>`;
       } else {
-        inner = `<text class="fp3-name" x="${ct[0].toFixed(1)}" y="${(ct[1] + 6).toFixed(1)}" style="fill:${txt};font-size:19px;font-weight:800">${code}</text>`;
+        inner = `<text class="fp3-name" x="${ct[0].toFixed(1)}" y="${(ct[1] + 6).toFixed(1)}" style="fill:${txt};font-size:22px;font-weight:800">${code}</text>`;
       }
       s += `<g data-uid="${uid}" class="fp3-unit"${isSel ? ` filter="url(#fp3Glow)"` : ""}>${wallSvg}<polygon points="${T.map(ps).join(" ")}" style="fill:${top};stroke:${isSel ? lighten(col, .4) : "rgba(0,0,0,.16)"};stroke-width:${isSel ? 2 : 1}"/>${inner}</g>`;
     }
