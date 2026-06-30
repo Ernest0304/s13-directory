@@ -81,12 +81,23 @@
   <script src="js/data.js?v=18"></script>
   <script src="js/db.js?v=2"></script>
   <script src="js/map.js?v=24"></script>
-  <script src="js/app.js?v=10"></script>
+  <script src="js/app.js?v=11"></script>
 
   <!-- Register the offline shell. Relative path → portable across local/live host.
        Secure-context only (https or localhost); silently skipped otherwise. -->
   <script>
     if ("serviceWorker" in navigator) {
+      // Auto-pick-up a new deploy: when the fresh SW takes control, reload ONCE.
+      // Guard 1: only on a real update (a SW already controlled us), not the first-ever install.
+      // Guard 2: only reload while idle (attract screen). If a customer is mid-tap, flag it and
+      //          app.js reloads the moment the board returns to the attract loop — never mid-route.
+      var swHadController = !!navigator.serviceWorker.controller, swReloaded = false;
+      navigator.serviceWorker.addEventListener("controllerchange", function () {
+        if (swReloaded || !swHadController) return;
+        var att = document.getElementById("attract");
+        if (att && att.classList.contains("active")) { swReloaded = true; location.reload(); }
+        else { window.__swPendingReload = true; }
+      });
       window.addEventListener("load", function () {
         navigator.serviceWorker.register("sw.js").catch(function (e) {
           console.warn("[sw] registration failed:", e && e.message);

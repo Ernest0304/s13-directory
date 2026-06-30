@@ -72,6 +72,7 @@
 
   /* ---------- screens ---------- */
   function show(name) {
+    if (name === "attract" && window.__swPendingReload) return location.reload();  // a new deploy is waiting — grab it now that we're idle
     for (const s of Object.values(screens)) s.classList.remove("active");
     screens[name].classList.add("active");
     if (name === "attract") { currentId = null; stopIdle(); startSlides(); }
