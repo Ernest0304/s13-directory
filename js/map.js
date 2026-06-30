@@ -210,13 +210,21 @@ const MapKiosk = (function () {
   function logoOnMap(url, cx, cy, r) {
     return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="#ffffff" stroke="rgba(0,0,0,.16)" stroke-width="1"/><image href="${ea(url)}" x="${(cx - r * 0.68).toFixed(1)}" y="${(cy - r * 0.68).toFixed(1)}" width="${(r * 1.36).toFixed(1)}" height="${(r * 1.36).toFixed(1)}" preserveAspectRatio="xMidYMid meet"/>`;
   }
-  // architectural door: leaf line + quarter-circle swing arc. prj projects (x,y)->[sx,sy]
+  // sliding/glass doorway: two glass panels across the opening with a centre gap + jamb posts.
+  // The opening runs from the hinge (d.x,d.y) along angle d.rot for length d.w. prj projects (x,y)->[sx,sy].
   function doorSVG(d, prj, color) {
-    const a1 = d.rot * D2R, a0 = (d.rot - 90) * D2R;
-    const h = prj(d.x, d.y), lf = prj(d.x + d.w * Math.cos(a1), d.y + d.w * Math.sin(a1));
-    let p = "";
-    for (let t = 0; t <= 1.0001; t += 0.1) { const a = a0 + (a1 - a0) * t, q = prj(d.x + d.w * Math.cos(a), d.y + d.w * Math.sin(a)); p += (t ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1) + " "; }
-    return `<path d="${p}" fill="none" stroke="${color}" stroke-width="1.5" stroke-dasharray="3 5" opacity=".8"/><line x1="${h[0].toFixed(1)}" y1="${h[1].toFixed(1)}" x2="${lf[0].toFixed(1)}" y2="${lf[1].toFixed(1)}" stroke="${color}" stroke-width="3.5" stroke-linecap="round"/>`;
+    const GLASS = "#cfe0f2";
+    const a1 = (d.rot - 90) * D2R, ap = a1 + Math.PI / 2;          // a1 = along the opening (the old closed-leaf/wall line); ap = jamb posts
+    const at = (t) => prj(d.x + d.w * Math.cos(a1) * t, d.y + d.w * Math.sin(a1) * t);
+    const seg = (t0, t1, w, col, op) => { const A = at(t0), B = at(t1);
+      return `<line x1="${A[0].toFixed(1)}" y1="${A[1].toFixed(1)}" x2="${B[0].toFixed(1)}" y2="${B[1].toFixed(1)}" stroke="${col}" stroke-width="${w}" stroke-linecap="butt" opacity="${op}"/>`; };
+    const tick = (t) => { const cx = d.x + d.w * Math.cos(a1) * t, cy = d.y + d.w * Math.sin(a1) * t,
+        A = prj(cx - 5 * Math.cos(ap), cy - 5 * Math.sin(ap)), B = prj(cx + 5 * Math.cos(ap), cy + 5 * Math.sin(ap));
+      return `<line x1="${A[0].toFixed(1)}" y1="${A[1].toFixed(1)}" x2="${B[0].toFixed(1)}" y2="${B[1].toFixed(1)}" stroke="${color}" stroke-width="3" stroke-linecap="round" opacity=".75"/>`; };
+    // jamb posts at both ends, then two glass panels (dark frame under, light glass over) with a centre gap
+    return tick(0) + tick(1)
+      + seg(0.06, 0.46, 7, color, .85) + seg(0.54, 0.94, 7, color, .85)
+      + seg(0.06, 0.46, 3.5, GLASS, 1) + seg(0.54, 0.94, 3.5, GLASS, 1);
   }
 
   return { render, directions };
