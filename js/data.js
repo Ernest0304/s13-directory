@@ -108,13 +108,13 @@ const FLOORPLAN = {
     spurX: 1017,                       // entrance spur (kiosk up to main corridor)
     dropX: 835,                        // drop point to reach the lower corridor
     midX: 689, midY0: 44, midY1: 258,  // small walkway between K-09 and K-10 (holds the back door)
-    frontY: 762, frontX0: 590, frontX1: 1017,   // bottom/front corridor: kiosk -> K1&2 entrance (past Loading Bay)
-    k1k2X: 612, k1k2Y0: 728, k1k2Y1: 762,        // short link up from the front corridor into K-01/K-02
+    frontY: 762, frontX0: 760, frontX1: 1017,   // bottom/front corridor: kiosk -> K1&2 entrance (past Loading Bay)
+    k1k2X: 786, k1k2Y0: 496, k1k2Y1: 762,        // vertical walkway BESIDE K-01 (lower corridor down to the K1&2 entrance)
   },
 
   kiosk:    { x: 1017, y: 650 },       // the "You are here" point (right lobby)
   entrance: { x: 1017, y: 712 },
-  k1k2:     { x: 612, y: 770 },        // the "K1 & 2 only" bottom entrance
+  k1k2:     { x: 786, y: 772 },        // the "K1 & 2 only" bottom entrance (foot of the walkway beside K-01)
 
   // unit footprints (x, y, w, h) + which corridor they face
   units: {
@@ -145,8 +145,7 @@ const FLOORPLAN = {
   doors: [
     { x: 1000, y: 562, w: 34, rot: -90 },   // main entrance door (corridor <-> lobby, by "you are here")
     { x: 678, y: 118, w: 22, rot: 90 },      // back door inside the K-09/K-10 walkway
-    { x: 584, y: 762, w: 56, rot: 90 },      // K1 & 2 bottom entrance (on the front corridor)
-    { x: 322, y: 566, w: 80, rot: 180, fire: true },  // fire door between K-02 and K-03 (normally closed)
+    { x: 764, y: 760, w: 44, rot: 90 },      // K1 & 2 bottom entrance (on the walkway beside K-01)
   ],
 
   // the entrance lobby (open area on the right where the kiosk stands)

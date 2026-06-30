@@ -14,8 +14,8 @@ const MapKiosk = (function () {
   /* ---- shared: walking route + directions (top-down coords) ------------- */
   function routePoints(id) {
     const u = FP.units[id], c = FP.corridor, k = FP.kiosk, ctr = center(u);
-    if (u.face === "k1k2")       // K-01/K-02: out the front, left past the loading bay, in via the dedicated K1&2 entrance
-      return [[k.x, k.y], [k.x, c.frontY], [c.k1k2X, c.frontY], [c.k1k2X, u.y + u.h], [ctr.x, u.y + u.h]];
+    if (u.face === "k1k2")       // K-01/K-02: out the front, left past the loading bay, UP the walkway beside K-01, in from the lower corridor
+      return [[k.x, k.y], [k.x, c.frontY], [c.k1k2X, c.frontY], [c.k1k2X, c.lY], [ctr.x, c.lY], [ctr.x, u.y]];
     const pts = [[k.x, k.y], [c.spurX, c.hY]];
     if (u.face === "down")       pts.push([ctr.x, c.hY], [ctr.x, u.y + u.h]);
     else if (u.face === "up")    pts.push([ctr.x, c.hY], [ctr.x, u.y]);
