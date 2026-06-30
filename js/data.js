@@ -103,8 +103,8 @@ const FLOORPLAN = {
   // corridor network (centre-lines + extents) — the route runs along these
   corridor: {
     hY: 258, hX0: 268, hX1: 1120,    // main horizontal corridor
-    vX: 286, vY0: 64,  vY1: 496,      // left vertical corridor (serves K-05/K-04; stops at lower corridor)
-    lY: 496, lX0: 184, lX1: 840,      // lower corridor (serves K-03 + the cold row)
+    vX: 286, vY0: 64,  vY1: 740,      // left vertical corridor (serves K-05/K-04/K-03 down the left side)
+    lY: 496, lX0: 280, lX1: 840,      // lower corridor (above K-02/K-01; starts right of K-03)
     spurX: 1017,                       // entrance spur (kiosk up to main corridor)
     dropX: 835,                        // drop point to reach the lower corridor
     midX: 689, midY0: 44, midY1: 258,  // small walkway between K-09 and K-10 (holds the back door)
@@ -120,7 +120,7 @@ const FLOORPLAN = {
   units: {
     K05: { x: 56,   y: 44,  w: 214, h: 186, face: "right" },
     K04: { x: 56,   y: 294, w: 214, h: 178, face: "right" },
-    K03: { x: 70,   y: 528, w: 246, h: 200, face: "lower" },
+    K03: { x: 56,   y: 496, w: 210, h: 244, face: "right" },
     K08: { x: 306,  y: 44,  w: 164, h: 186, face: "down"  },
     K09: { x: 492,  y: 44,  w: 186, h: 186, face: "down"  },
     K10: { x: 700,  y: 44,  w: 156, h: 186, face: "down"  },
@@ -146,6 +146,7 @@ const FLOORPLAN = {
     { x: 1000, y: 562, w: 34, rot: -90 },   // main entrance door (corridor <-> lobby, by "you are here")
     { x: 678, y: 118, w: 22, rot: 90 },      // back door inside the K-09/K-10 walkway
     { x: 764, y: 760, w: 44, rot: 90 },      // K1 & 2 bottom entrance (on the walkway beside K-01)
+    { x: 270, y: 540, w: 36, rot: 90 },      // door on the corridor between K-03 and K-02
   ],
 
   // the entrance lobby (open area on the right where the kiosk stands)
