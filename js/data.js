@@ -119,16 +119,16 @@ const FLOORPLAN = {
 
   // unit footprints (x, y, w, h) + which corridor they face
   units: {
-    K05: { x: 56,   y: 44,  w: 214, h: 186, face: "right" },
-    K04: { x: 56,   y: 294, w: 214, h: 178, face: "right" },
-    K03: { x: 26,   y: 500, w: 240, h: 228, face: "lower" },
-    K08: { x: 306,  y: 44,  w: 164, h: 186, face: "down"  },
+    K05: { x: 50,   y: 44,  w: 214, h: 186, face: "right" },
+    K04: { x: 50,   y: 294, w: 214, h: 178, face: "right" },
+    K03: { x: 20,   y: 500, w: 240, h: 228, face: "lower" },
+    K08: { x: 316,  y: 44,  w: 164, h: 186, face: "down"  },
     K09: { x: 492,  y: 44,  w: 186, h: 186, face: "down"  },
-    K10: { x: 700,  y: 44,  w: 156, h: 186, face: "down"  },
+    K10: { x: 710,  y: 44,  w: 156, h: 186, face: "down"  },
     K11: { x: 874,  y: 44,  w: 156, h: 186, face: "down"  },
     K12: { x: 1048, y: 44,  w: 156, h: 186, face: "down"  },
-    K06: { x: 320,  y: 294, w: 232, h: 168, face: "up"    },
-    K07: { x: 574,  y: 294, w: 250, h: 168, face: "up"    },
+    K06: { x: 320,  y: 288, w: 232, h: 168, face: "up"    },
+    K07: { x: 574,  y: 288, w: 250, h: 168, face: "up"    },
     K02: { x: 282,  y: 548, w: 196, h: 192, face: "k1k2" },
     K01: { x: 500,  y: 548, w: 196, h: 192, face: "k1k2" },
   },
