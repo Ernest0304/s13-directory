@@ -105,15 +105,15 @@ const FLOORPLAN = {
   corridor: {
     hY: 258, hX0: 268, hX1: 1120,    // main horizontal corridor
     vX: 286, vY0: 64,  vY1: 510,      // left vertical corridor (serves K-05/K-04; stops at the lower corridor)
-    lY: 510, lX0: 280, lX1: 840,      // lower corridor (above K-02/K-01; meets K-03's top-right)
+    lY: 510, lX0: 280, lX1: 745,      // lower corridor (above K-02/K-01; ends just past the walkway beside K-01)
     spurX: 1017,                       // entrance spur (kiosk up to main corridor)
-    dropX: 835,                        // drop point to reach the lower corridor
+    rightX: 1110,                      // "right-then-down" walkway: kiosk out to the right, then down to the front (around the car park)
     midX: 689, midY0: 44, midY1: 258,  // small walkway between K-09 and K-10 (holds the back door)
-    frontY: 762, frontX0: 712, frontX1: 1017,   // bottom/front corridor: kiosk -> K1&2 entrance (past Loading Bay)
+    frontY: 762, frontX0: 713, frontX1: 1110,   // bottom/front corridor: walkway-beside-K01 -> down the right side to the kiosk
     k1k2X: 728, k1k2Y0: 510, k1k2Y1: 762,        // vertical walkway BESIDE K-01 (lower corridor down to the K1&2 entrance)
   },
 
-  kiosk:    { x: 1017, y: 600 },       // the "You are here" kiosk marker (small white box)
+  kiosk:    { x: 1017, y: 580 },       // the "You are here" kiosk marker (small white box)
   entrance: { x: 1017, y: 712 },
   k1k2:     { x: 728, y: 770 },        // the "K1 & 2 only" bottom entrance (foot of the walkway beside K-01)
 
@@ -141,14 +141,14 @@ const FLOORPLAN = {
     { x: 898, y: 414, w: 94, h: 58, key: "matWash" },
     { x: 1046, y: 290, w: 92, h: 58, key: "dryStore" },
     { x: 796, y: 540, w: 140, h: 200, key: "loadingBay" },
-    { x: 1086, y: 628, w: 104, h: 108, key: "carPark" },
+    { x: 962, y: 648, w: 110, h: 92, key: "carPark" },
   ],
 
   // doorways drawn as a swing symbol (hinge x,y; w = leaf length; rot = open angle°)
   doors: [
     { x: 678, y: 118, w: 22, rot: 90 },      // back door inside the K-09/K-10 walkway
     { x: 706, y: 612, w: 44, rot: 90 },      // K1 & 2 entrance (on the walkway beside K-01, mid-height)
-    { x: 278, y: 486, w: 38, rot: 180 },     // K-03 entrance door (on the lower corridor, at K-03's top-right)
+    { x: 342, y: 492, w: 36, rot: 180 },     // door on the lower corridor separating the main kitchens from the K-01/K-02 zone
   ],
 
   // the entrance lobby (open area on the right where the kiosk stands)

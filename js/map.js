@@ -16,8 +16,8 @@ const MapKiosk = (function () {
     const u = FP.units[id], c = FP.corridor, k = FP.kiosk, ctr = center(u);
     if (id === "K03")            // big corner kitchen: down the left corridor to the lower corridor, in at its top-right (right side is a wall)
       return [[k.x, k.y], [c.spurX, c.hY], [c.vX, c.hY], [c.vX, c.lY], [c.lX0, c.lY], [u.x + u.w - 26, c.lY + 28]];
-    if (u.face === "k1k2")       // K-01/K-02: out the front, left past the loading bay, UP the walkway beside K-01, in from the lower corridor
-      return [[k.x, k.y], [k.x, c.frontY], [c.k1k2X, c.frontY], [c.k1k2X, c.lY], [ctr.x, c.lY], [ctr.x, u.y]];
+    if (u.face === "k1k2")       // K-01/K-02: from the kiosk go right then down (around the car park), along the front, UP the walkway beside K-01, in from the lower corridor
+      return [[k.x, k.y], [c.rightX, k.y], [c.rightX, c.frontY], [c.k1k2X, c.frontY], [c.k1k2X, c.lY], [ctr.x, c.lY], [ctr.x, u.y]];
     const pts = [[k.x, k.y], [c.spurX, c.hY]];
     if (u.face === "down")       pts.push([ctr.x, c.hY], [ctr.x, u.y + u.h]);
     else if (u.face === "up")    pts.push([ctr.x, c.hY], [ctr.x, u.y]);
@@ -49,7 +49,9 @@ const MapKiosk = (function () {
         <rect x="${c.hX0}" y="${c.hY - 16}" width="${c.hX1 - c.hX0}" height="32" rx="16"/>
         <rect x="${c.vX - 16}" y="${c.vY0}" width="32" height="${c.vY1 - c.vY0}" rx="16"/>
         <rect x="${c.lX0}" y="${c.lY - 15}" width="${c.lX1 - c.lX0}" height="30" rx="15"/>
-        <rect x="${c.spurX - 16}" y="${c.hY}" width="32" height="${c.frontY - c.hY}" rx="16"/>
+        <rect x="${c.spurX - 16}" y="${c.hY}" width="32" height="${k.y - c.hY}" rx="16"/>
+        <rect x="${c.spurX - 16}" y="${k.y - 15}" width="${c.rightX - c.spurX + 31}" height="30" rx="15"/>
+        <rect x="${c.rightX - 15}" y="${k.y}" width="30" height="${c.frontY - k.y}" rx="15"/>
         <rect x="${c.frontX0}" y="${c.frontY - 15}" width="${c.frontX1 - c.frontX0}" height="30" rx="15"/>
         <rect x="${c.k1k2X - 15}" y="${c.k1k2Y0}" width="30" height="${c.k1k2Y1 - c.k1k2Y0}" rx="15"/>
         <rect x="${c.midX - 12}" y="${c.midY0}" width="24" height="${c.midY1 - c.midY0}" rx="11"/></g>`;
@@ -83,7 +85,6 @@ const MapKiosk = (function () {
       <defs>${glowDefs(brand)}</defs>
       <rect class="fp-building" x="20" y="20" width="${W - 40}" height="${H - 40}" rx="30" filter="url(#fpSoft)"/>
       ${lanes}${rooms}${doors2d}${units}${route}
-      <text class="fp-entrance-label" x="${FP.k1k2.x}" y="${FP.k1k2.y + 22}">▴ ${I18N.k1k2Entrance[lang]}</text>
       <g><rect x="${k.x - 62}" y="${k.y - 26}" width="124" height="56" rx="11" fill="#ffffff" stroke="var(--map-line)" stroke-width="1.5"/>
         <circle class="fp-here-dot" cx="${k.x}" cy="${k.y - 6}" r="6"/>
         <text class="fp-here-label" x="${k.x}" y="${k.y + 18}" style="font-size:13px">${I18N.youAreHere[lang]}</text></g></svg>`;
@@ -153,7 +154,7 @@ const MapKiosk = (function () {
 
     let s = `<polygon points="${qp(0, 0, W, H, 0)}" style="fill:${floorFill};stroke:${floorStroke};stroke-width:2"/>`;
     // walkways: lighter raised strips + a dashed centre-line so they clearly read as corridors
-    const lanes = [[c.hX0, c.hY - 22, c.hX1 - c.hX0, 44], [c.vX - 22, c.vY0, 44, c.vY1 - c.vY0], [c.lX0, c.lY - 21, c.lX1 - c.lX0, 42], [c.spurX - 22, c.hY, 44, c.frontY - c.hY], [c.frontX0, c.frontY - 21, c.frontX1 - c.frontX0, 42], [c.k1k2X - 21, c.k1k2Y0, 42, c.k1k2Y1 - c.k1k2Y0], [c.midX - 13, c.midY0, 26, c.midY1 - c.midY0]];
+    const lanes = [[c.hX0, c.hY - 22, c.hX1 - c.hX0, 44], [c.vX - 22, c.vY0, 44, c.vY1 - c.vY0], [c.lX0, c.lY - 21, c.lX1 - c.lX0, 42], [c.spurX - 22, c.hY, 44, k.y - c.hY], [c.spurX - 22, k.y - 21, c.rightX - c.spurX + 43, 42], [c.rightX - 21, k.y, 42, c.frontY - k.y], [c.frontX0, c.frontY - 21, c.frontX1 - c.frontX0, 42], [c.k1k2X - 21, c.k1k2Y0, 42, c.k1k2Y1 - c.k1k2Y0], [c.midX - 13, c.midY0, 26, c.midY1 - c.midY0]];
     for (const [x, y, w, h] of lanes) s += `<polygon points="${qp(x, y, w, h, 1)}" style="fill:${laneFill}"/>`;
     for (const r of FP.service) { s += `<polygon points="${qp(r.x, r.y, r.w, r.h, 0)}" style="fill:${roomFill};stroke:${floorStroke}"/>`;
       const cc = pj(r.x + r.w / 2, r.y + r.h / 2, 0, C); s += `<text class="fp3-room-label" x="${cc[0].toFixed(1)}" y="${cc[1].toFixed(1)}">${I18N[r.key][lang]}</text>`; }
@@ -191,8 +192,6 @@ const MapKiosk = (function () {
       s += `<polyline class="fp-route-bg" points="${rp}"/><polyline class="fp-route" points="${rp}" style="stroke:${brand}"/>
             <circle cx="${ep[0].toFixed(1)}" cy="${ep[1].toFixed(1)}" r="12" style="fill:${brand};stroke:#fff;stroke-width:3"/>`; }
 
-    const k2p = pj(FP.k1k2.x, FP.k1k2.y, 0, C);
-    s += `<text class="fp3-room-label" x="${k2p[0].toFixed(1)}" y="${(k2p[1] + 16).toFixed(1)}">▴ ${I18N.k1k2Entrance[lang]}</text>`;
     const kp = pj(k.x, k.y, 6, C);
     s += `<rect x="${(kp[0] - 58).toFixed(1)}" y="${(kp[1] - 24).toFixed(1)}" width="116" height="52" rx="10" fill="#ffffff" stroke="${laneStroke}" stroke-width="1.5"/>
       <circle class="fp-here-dot" cx="${kp[0].toFixed(1)}" cy="${(kp[1] - 5).toFixed(1)}" r="6"/>
