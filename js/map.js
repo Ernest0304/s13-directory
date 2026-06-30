@@ -46,15 +46,15 @@ const MapKiosk = (function () {
     const W = FP.viewBox.w, H = FP.viewBox.h, c = FP.corridor, k = FP.kiosk;
     const bright = theme === "bright", selK = id ? kitchenOf(id) : null, selOcc = !!(selK && selK.occupied), brand = selOcc ? selK.color : "#8A93A4";
     const lanes = `<g class="fp-lanes">
-        <rect x="${c.hX0 - 15}" y="${c.hY - 16}" width="${c.hX1 - c.hX0 + 30}" height="32"/>
-        <rect x="${c.vX - 16}" y="${c.vY0 - 15}" width="32" height="${c.vY1 - c.vY0 + 30}"/>
-        <rect x="${c.lX0 - 15}" y="${c.lY - 15}" width="${c.lX1 - c.lX0 + 30}" height="30"/>
-        <rect x="${c.spurX - 16}" y="${c.hY - 15}" width="32" height="${k.y - c.hY + 30}"/>
-        <rect x="${c.spurX - 31}" y="${k.y - 15}" width="${c.rightX - c.spurX + 61}" height="30"/>
+        <rect x="${c.hX0}" y="${c.hY - 16}" width="${c.hX1 - c.hX0}" height="32"/>
+        <rect x="${c.vX - 16}" y="${c.vY0}" width="32" height="${c.vY1 - c.vY0 + 15}"/>
+        <rect x="${c.lX0}" y="${c.lY - 15}" width="${c.k1k2X + 15 - c.lX0}" height="30"/>
+        <rect x="${c.spurX - 16}" y="${c.hY}" width="32" height="${k.y - c.hY + 15}"/>
+        <rect x="${c.spurX - 16}" y="${k.y - 15}" width="${c.rightX + 15 - (c.spurX - 16)}" height="30"/>
         <rect x="${c.rightX - 15}" y="${k.y - 15}" width="30" height="${c.frontY - k.y + 30}"/>
-        <rect x="${c.frontX0 - 15}" y="${c.frontY - 15}" width="${c.frontX1 - c.frontX0 + 30}" height="30"/>
-        <rect x="${c.k1k2X - 15}" y="${c.k1k2Y0 - 15}" width="30" height="${c.k1k2Y1 - c.k1k2Y0 + 30}"/>
-        <rect x="${c.midX - 12}" y="${c.midY0}" width="24" height="${c.midY1 - c.midY0 + 15}"/></g>`;
+        <rect x="${c.k1k2X - 15}" y="${c.frontY - 15}" width="${c.rightX + 15 - (c.k1k2X - 15)}" height="30"/>
+        <rect x="${c.k1k2X - 15}" y="${c.lY - 15}" width="30" height="${c.frontY - c.lY + 30}"/>
+        <rect x="${c.midX - 12}" y="${c.midY0}" width="24" height="${c.midY1 - c.midY0}"/></g>`;
     let rooms = "";
     for (const s of FP.service) rooms += `<rect class="fp-room" x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="10"/>
         <text class="fp-room-label" x="${s.x + s.w / 2}" y="${s.y + s.h / 2 + 5}">${I18N[s.key][lang]}</text>`;
@@ -154,7 +154,7 @@ const MapKiosk = (function () {
 
     let s = `<polygon points="${qp(0, 0, W, H, 0)}" style="fill:${floorFill};stroke:${floorStroke};stroke-width:2"/>`;
     // walkways: lighter raised strips + a dashed centre-line so they clearly read as corridors
-    const lanes = [[c.hX0 - 15, c.hY - 22, c.hX1 - c.hX0 + 30, 44], [c.vX - 22, c.vY0 - 15, 44, c.vY1 - c.vY0 + 30], [c.lX0 - 15, c.lY - 21, c.lX1 - c.lX0 + 30, 42], [c.spurX - 22, c.hY - 15, 44, k.y - c.hY + 30], [c.spurX - 37, k.y - 21, c.rightX - c.spurX + 73, 42], [c.rightX - 21, k.y - 15, 42, c.frontY - k.y + 30], [c.frontX0 - 15, c.frontY - 21, c.frontX1 - c.frontX0 + 30, 42], [c.k1k2X - 21, c.k1k2Y0 - 15, 42, c.k1k2Y1 - c.k1k2Y0 + 30], [c.midX - 13, c.midY0, 26, c.midY1 - c.midY0 + 15]];
+    const lanes = [[c.hX0, c.hY - 22, c.hX1 - c.hX0, 44], [c.vX - 22, c.vY0, 44, c.vY1 - c.vY0 + 21], [c.lX0, c.lY - 21, c.k1k2X + 21 - c.lX0, 42], [c.spurX - 22, c.hY, 44, k.y - c.hY + 21], [c.spurX - 22, k.y - 21, c.rightX + 21 - (c.spurX - 22), 42], [c.rightX - 21, k.y - 21, 42, c.frontY - k.y + 42], [c.k1k2X - 21, c.frontY - 21, c.rightX + 21 - (c.k1k2X - 21), 42], [c.k1k2X - 21, c.lY - 21, 42, c.frontY - c.lY + 42], [c.midX - 13, c.midY0, 26, c.midY1 - c.midY0]];
     for (const [x, y, w, h] of lanes) s += `<polygon points="${qp(x, y, w, h, 1)}" style="fill:${laneFill}"/>`;
     for (const r of FP.service) { s += `<polygon points="${qp(r.x, r.y, r.w, r.h, 0)}" style="fill:${roomFill};stroke:${floorStroke}"/>`;
       const cc = pj(r.x + r.w / 2, r.y + r.h / 2, 0, C); s += `<text class="fp3-room-label" x="${cc[0].toFixed(1)}" y="${cc[1].toFixed(1)}">${I18N[r.key][lang]}</text>`; }
