@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Smart City Kitchens · S13 · 3D Directory (preview)</title>
+  <link rel="icon" type="image/png" href="img/icon-192.png" />
+  <link rel="stylesheet" href="css/styles.css?v=19" />
+  <!-- Three.js resolved for map3d.js's dynamic imports -->
+  <script type="importmap">
+  { "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  } }
+  </script>
+  <style>
+    /* 3D map fills the map area (behind the floating rail, like the SVG board) */
+    .main-a .map { padding: 0; display: block; }
+    /* crisp CSS2D labels floating on the 3D blocks */
+    .m3-lab, .m3-svc, .m3-here { pointer-events: none; white-space: nowrap; text-align: center; transform: translateY(-50%); }
+    .m3-badge { width: 44px; height: 44px; border-radius: 50%; background: #fff; margin: 0 auto 3px; display: grid; place-items: center; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,.3); }
+    .m3-badge img { width: 82%; height: 82%; object-fit: contain; }
+    .m3-badge .ic { font-size: 23px; }
+    .m3-nm { color: #fff; font-weight: 800; font-size: 15px; line-height: 1.05; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
+    .m3-code { color: #fff; font-weight: 700; font-size: 11px; opacity: .82; letter-spacing: .05em; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
+    .m3-lab.vac { opacity: .92; }
+    .m3-code.big { font-size: 16px; opacity: .9; }
+    .m3-av { color: #fff; font-size: 10px; opacity: .68; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
+    .m3-svc { color: #eaf0f7; font-size: 11px; font-weight: 600; text-shadow: 0 1px 4px rgba(0,0,0,.55); }
+    .m3-here { color: #0fae84; font-weight: 800; font-size: 12px; letter-spacing: .04em; text-shadow: 0 2px 8px rgba(255,255,255,.7); }
+    /* small preview tag */
+    #d3tag { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 60;
+      background: rgba(20,24,33,.72); color: #fff; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 999px;
+      backdrop-filter: blur(10px); font-family: var(--font); }
+  </style>
+</head>
+<body>
+  <div class="kiosk" id="kiosk" data-theme="bright">
+
+    <div class="toggles">
+      <div class="seg" id="viewToggle" role="group" aria-label="Map view">
+        <button data-view="3d" class="active" aria-label="3D view">3D</button>
+        <button data-view="2d" aria-label="2D view">2D</button>
+      </div>
+      <div class="seg" id="langToggle" role="group" aria-label="Language">
+        <button data-lang="en" class="active" aria-label="English">EN</button>
+        <button data-lang="zh" aria-label="中文">中</button>
+      </div>
+      <div class="seg" id="themeToggle" role="group" aria-label="Theme">
+        <button data-theme="bright" class="active" aria-label="Day theme">☀</button>
+        <button data-theme="dark" aria-label="Night theme">🌙</button>
+      </div>
+    </div>
+
+    <!-- ATTRACT / IDLE -->
+    <section class="screen attract active" id="attract" aria-label="Touch to begin">
+      <div class="topbar">
+        <div class="wordmark">
+          <span class="mark"><img src="img/logo.png?v=2" alt="Smart City Kitchens" /></span>
+          <span class="wm-text"><b data-i18n-brand>SMART CITY KITCHENS</b><i data-i18n="directory">Kitchen Directory</i><em class="wm-addr">1550 Bedok North Ave 4, #04-21<br/>Singapore 489950</em></span>
+        </div>
+      </div>
+      <div class="slides" id="slides"></div>
+      <div class="attract-foot">
+        <div class="cta" data-i18n="touchToBegin">TOUCH TO BEGIN</div>
+        <div class="cta-sub" data-i18n="tapAnywhere">Tap anywhere to start</div>
+      </div>
+    </section>
+
+    <!-- MAIN: 3D map + floating panels (Option A shell, unchanged) -->
+    <section class="screen main main-a" id="main" aria-label="Directory">
+      <div class="map" id="map"><!-- Three.js canvas injected --></div>
+
+      <header class="main-head brand-float">
+        <div class="wordmark sm">
+          <span class="mark"><img src="img/logo.png?v=2" alt="Smart City Kitchens" /></span>
+          <span class="wm-text"><b data-i18n-brand>SMART CITY KITCHENS</b><i data-i18n="directory">Kitchen Directory</i><em class="wm-addr">1550 Bedok North Ave 4, #04-21<br/>Singapore 489950</em></span>
+        </div>
+        <button class="home-btn" id="homeBtn">⟲ <span data-i18n="startOver">Start Over</span></button>
+      </header>
+
+      <aside class="browse-float">
+        <div class="filters" id="filters"></div>
+        <div class="info-panel" id="infoPanel"></div>
+        <div class="shoprow" id="shoprow"></div>
+      </aside>
+
+      <footer class="facility-foot" id="facilityFoot"></footer>
+    </section>
+
+  </div>
+  <div id="d3tag">3D preview · drag map to rotate · same board, real WebGL floor plan</div>
+
+  <script src="js/config.js"></script>
+  <script src="js/data.js?v=18"></script>
+  <script src="js/db.js?v=2"></script>
+  <script src="js/map3d.js?v=1"></script>
+  <script src="js/app.js?v=11"></script>
+</body>
+</html>
