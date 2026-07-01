@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="apple-touch-icon" href="img/icon-192.png" />
   <link rel="icon" type="image/png" href="img/icon-192.png" />
-  <link rel="stylesheet" href="css/styles.css?v=16" />
+  <link rel="stylesheet" href="css/styles.css?v=17" />
 </head>
 <body>
   <div class="kiosk" id="kiosk" data-theme="bright">
@@ -48,9 +48,11 @@
       </div>
     </section>
 
-    <!-- ===================== MAIN: map + shops ===================== -->
-    <section class="screen main" id="main" aria-label="Directory">
-      <header class="main-head">
+    <!-- ============== MAIN: full-bleed map + floating panels (Option A) ============== -->
+    <section class="screen main main-a" id="main" aria-label="Directory">
+      <div class="map" id="map"><!-- SVG injected --></div>
+
+      <header class="main-head brand-float">
         <div class="wordmark sm">
           <span class="mark"><img src="img/logo.png?v=2" alt="Smart City Kitchens" /></span>
           <span class="wm-text"><b data-i18n-brand>SMART CITY KITCHENS</b><i data-i18n="directory">Kitchen Directory</i><em class="wm-addr">1550 Bedok North Ave 4, #04-21<br/>Singapore 489950</em></span>
@@ -58,20 +60,12 @@
         <button class="home-btn" id="homeBtn">⟲ <span data-i18n="startOver">Start Over</span></button>
       </header>
 
-      <div class="stage">
-        <div class="map-card">
-          <div class="map-card-head">
-            <span data-i18n="floorPlan">Floor Plan</span>
-            <span class="legend"><span class="h" data-i18n="youAreHere">YOU ARE HERE</span></span>
-          </div>
-          <div class="map" id="map"><!-- SVG injected --></div>
-        </div>
+      <aside class="browse-float">
+        <div class="filters" id="filters"><!-- cuisine chips injected --></div>
+        <div class="info-panel" id="infoPanel"><!-- selected info injected --></div>
+        <div class="shoprow" id="shoprow"><!-- kitchen cards injected --></div>
+      </aside>
 
-        <aside class="info-panel" id="infoPanel"><!-- default prompt / selected info injected --></aside>
-      </div>
-
-      <div class="filters" id="filters"><!-- cuisine chips injected --></div>
-      <div class="shoprow" id="shoprow"><!-- kitchen cards injected --></div>
       <footer class="facility-foot" id="facilityFoot"><!-- facility info injected --></footer>
     </section>
 
