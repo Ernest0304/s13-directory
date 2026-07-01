@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>S13 · 3D Floor Plan (Three.js prototype)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; background: #eef2f8;
+    font-family: "SF Pro Display", -apple-system, "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif; user-select: none; }
+  #app { position: fixed; inset: 0; }
+  #app canvas { display: block; }
+  .label { color: #fff; font-weight: 800; text-align: center; text-shadow: 0 2px 8px rgba(0,0,0,.55); pointer-events: none; white-space: nowrap; }
+  .label .code { font-size: 12px; letter-spacing: .06em; opacity: .8; }
+  .label .nm { font-size: 15px; line-height: 1.05; }
+  .label.here { color: #0fae84; text-shadow: 0 2px 8px rgba(255,255,255,.7); }
+  .label.here .nm { font-size: 13px; letter-spacing: .05em; }
+  /* floating chrome */
+  .bar { position: fixed; z-index: 10; display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,.82); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,.9); border-radius: 16px; box-shadow: 0 10px 30px rgba(30,40,60,.16);
+    padding: 10px 16px; }
+  #brand { top: 18px; left: 18px; }
+  #brand b { font-size: 15px; letter-spacing: .04em; color: #26303e; }
+  #brand small { display: block; font-size: 11px; color: #6b7583; margin-top: 1px; }
+  #tools { top: 18px; right: 18px; padding: 6px; gap: 6px; }
+  #tools button { font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; border: none;
+    border-radius: 11px; padding: 8px 13px; color: #4a5462; background: #eef1f6; transition: .2s; }
+  #tools button.on { color: #3a2c07; background: linear-gradient(135deg,#f6cb6b,#e69b3a); }
+  #hint { bottom: 18px; left: 18px; font-size: 12px; color: #5b6470; font-weight: 600; }
+  #note { bottom: 18px; right: 18px; font-size: 11px; color: #8a93a4; max-width: 340px; text-align: right; line-height: 1.4; }
+  #loading { position: fixed; inset: 0; display: grid; place-items: center; z-index: 20;
+    font-size: 15px; color: #6b7583; background: #eef2f8; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="loading">Loading 3D engine…</div>
+<div class="bar" id="brand"><div><b>SMART CITY KITCHENS · S13</b><small>3D Floor Plan — Three.js prototype</small></div></div>
+<div class="bar" id="tools">
+  <button id="btnReset" class="on">3D View</button>
+  <button id="btnTop">Top-down</button>
+  <button id="btnTheme">☀ / 🌙</button>
+</div>
+<div class="bar" id="hint">🖱️ Drag to rotate · scroll to zoom · tap a kitchen to focus</div>
+<div class="bar" id="note">Prototype · placeholder tenants · real version pulls live tenants &amp; renders on-demand (idle = 0 GPU)</div>
+
+<script>
+window.__errs = [];
+window.addEventListener('error', function (e) {
+  window.__errs.push((e.message || String(e)) + ' @' + (e.lineno || '?') + ':' + (e.colno || '?'));
+  var l = document.getElementById('loading'); if (l) l.textContent = 'ERR: ' + window.__errs.join(' | ');
+});
+window.addEventListener('unhandledrejection', function (e) {
+  window.__errs.push('REJECT: ' + (e.reason && (e.reason.message || e.reason)));
+  var l = document.getElementById('loading'); if (l) l.textContent = 'ERR: ' + window.__errs.join(' | ');
+});
+</script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+/* ---- floor-plan data (same coords as the live board's data.js) ---- */
+const VB = { w: 1240, h: 800 };
+const UNITS = {
+  K05:{x:50,y:44,w:214,h:186}, K04:{x:50,y:294,w:214,h:178}, K03:{x:20,y:500,w:240,h:228},
+  K08:{x:316,y:44,w:164,h:186}, K09:{x:492,y:44,w:186,h:186}, K10:{x:710,y:44,w:156,h:186},
+  K11:{x:874,y:44,w:156,h:186}, K12:{x:1048,y:44,w:156,h:186}, K06:{x:320,y:288,w:232,h:168},
+  K07:{x:574,y:288,w:250,h:168}, K02:{x:282,y:548,w:196,h:192}, K01:{x:500,y:548,w:196,h:192},
+};
+const KIT = {
+  K05:{c:"#E6A700",n:"Cluck & Co",t:"Large"}, K04:{c:"#C1440E",n:"Pizza Forno",t:"Large"},
+  K03:{c:"#E4572E",n:"Smoke & Barrel",t:"Large"}, K08:{c:"#F2A900",n:"Noodle Theory",t:"Std"},
+  K09:{c:"#E08D2F",n:"Taco Libre",t:"Std"}, K10:{c:"#2E86AB",n:"Sushi Den",t:"Std"},
+  K11:{c:"#C0392B",n:"Wok This Way",t:"Std"}, K12:{c:"#8C6A4A",n:"The Daily Grind",t:"Std"},
+  K06:{c:"#B23A48",n:"Burger Yard",t:"Large"}, K07:{c:"#D7263D",n:"Bombay Express",t:"Large"},
+  K02:{c:"#3BA776",n:"Green Bowl",t:"Cold"}, K01:{c:"#C76B98",n:"Sweet Lab",t:"Cold"},
+};
+const SERVICE = [
+  {x:898,y:290,w:94,h:58}, {x:898,y:352,w:94,h:58}, {x:898,y:414,w:94,h:58},
+  {x:1046,y:290,w:92,h:58}, {x:796,y:540,w:140,h:200}, {x:962,y:648,w:110,h:92},
+];
+const C = { hY:258,hX0:268,hX1:1120, vX:286,vY0:64,vY1:510, lY:510,lX0:280, spurX:1017,
+  rightX:1110, midX:689,midY0:44,midY1:258, frontY:762, k1k2X:728 };
+const KIOSK = { x:1017, y:580 };
+const LANES = [
+  [C.hX0,C.hY-22,C.hX1-C.hX0,44],[C.vX-22,C.vY0,44,C.vY1-C.vY0+21],[C.lX0,C.lY-21,C.k1k2X+21-C.lX0,42],
+  [C.spurX-22,C.hY,44,KIOSK.y-C.hY+21],[C.spurX-22,KIOSK.y-21,C.rightX+21-(C.spurX-22),42],
+  [C.rightX-21,KIOSK.y-21,42,C.frontY-KIOSK.y+42],[C.k1k2X-21,C.frontY-21,C.rightX+21-(C.k1k2X-21),42],
+  [C.k1k2X-21,C.lY-21,42,C.frontY-C.lY+42],[C.midX-13,C.midY0,26,C.midY1-C.midY0],
+];
+const GAP = 10;
+const hOf = t => t === "Large" ? 82 : t === "Cold" ? 58 : 66;   // extrude height by unit type
+// map SVG (sx,sy) -> world (x,z), plan centred at origin
+const wx = sx => sx - VB.w / 2, wz = sy => sy - VB.h / 2;
+
+/* ---- renderers ---- */
+const app = document.getElementById('app');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));   // cap: never render above 2x (4K stays cheap)
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.02;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+app.appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.domElement.style.cssText = 'position:absolute;inset:0;pointer-events:none;';
+app.appendChild(labelRenderer.domElement);
+let needsRender = true;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(42, 1, 1, 6000);
+camera.position.set(30, 560, 880);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.target.set(0, 0, 30);
+controls.minDistance = 380;
+controls.maxDistance = 2200;
+controls.maxPolarAngle = Math.PI * 0.49;   // don't go under the floor
+controls.addEventListener('change', () => needsRender = true);
+
+/* ---- lights + environment (theme-aware) ---- */
+const hemi = new THREE.HemisphereLight(0xffffff, 0xb9c3d2, 0.55);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff2df, 1.15);
+sun.position.set(520, 940, 360);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.near = 100; sun.shadow.camera.far = 2400;
+sun.shadow.camera.left = -900; sun.shadow.camera.right = 900;
+sun.shadow.camera.top = 900; sun.shadow.camera.bottom = -900;
+sun.shadow.bias = -0.0004; sun.shadow.radius = 6;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0xdfe8f5, 0.35);
+fill.position.set(-400, 500, -300);
+scene.add(fill);
+
+/* ---- ground ---- */
+const groundMat = new THREE.MeshStandardMaterial({ color: 0xd7dfea, roughness: 0.96, metalness: 0 });
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(VB.w + 360, VB.h + 360), groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// walkways: crisp white strips just above the floor
+const laneMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85 });
+for (const [x, y, w, h] of LANES) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, 2, h), laneMat);
+  m.position.set(wx(x + w / 2), 1.2, wz(y + h / 2));
+  m.receiveShadow = true;
+  scene.add(m);
+}
+
+/* ---- service rooms (low grey blocks) ---- */
+const svcMat = new THREE.MeshStandardMaterial({ color: 0xc4cedb, roughness: 0.85 });
+for (const s of SERVICE) {
+  const m = new THREE.Mesh(new RoundedBoxGeometry(s.w - GAP, 26, s.h - GAP, 3, 5), svcMat);
+  m.position.set(wx(s.x + s.w / 2), 13, wz(s.y + s.h / 2));
+  m.castShadow = m.receiveShadow = true;
+  scene.add(m);
+}
+
+/* ---- kitchen blocks ---- */
+const blocks = [];   // {mesh, id, baseY, height, label}
+function makeLabel(id, name, cls) {
+  const el = document.createElement('div');
+  el.className = 'label' + (cls ? ' ' + cls : '');
+  el.innerHTML = cls === 'here'
+    ? `<div class="nm">📍 YOU ARE HERE</div>`
+    : `<div class="code">${id.replace('K', 'K-')}</div><div class="nm">${name}</div>`;
+  return new CSS2DObject(el);
+}
+for (const [id, u] of Object.entries(UNITS)) {
+  const k = KIT[id], H = hOf(k.t);
+  const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(k.c), roughness: 0.5, metalness: 0.06 });
+  const geo = new RoundedBoxGeometry(u.w - 2 * GAP, H, u.h - 2 * GAP, 4, 7);
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(wx(u.x + u.w / 2), H / 2, wz(u.y + u.h / 2));
+  mesh.castShadow = mesh.receiveShadow = true;
+  mesh.userData = { id, baseY: H / 2, H };
+  scene.add(mesh);
+  const label = makeLabel(id, k.n);
+  label.position.set(0, H / 2 + 10, 0);
+  mesh.add(label);
+  blocks.push({ mesh, id, label });
+}
+
+/* ---- you-are-here marker ---- */
+const hereMat = new THREE.MeshStandardMaterial({ color: 0x0fae84, emissive: 0x0fae84, emissiveIntensity: 0.5, roughness: 0.4 });
+const here = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 44, 24), hereMat);
+here.position.set(wx(KIOSK.x), 22, wz(KIOSK.y));
+here.castShadow = true;
+scene.add(here);
+const hereTop = new THREE.Mesh(new THREE.SphereGeometry(13, 24, 16), hereMat);
+hereTop.position.set(wx(KIOSK.x), 52, wz(KIOSK.y));
+scene.add(hereTop);
+const hereLabel = makeLabel('', '', 'here');
+hereLabel.position.set(wx(KIOSK.x), 78, wz(KIOSK.y));
+scene.add(hereLabel);
+
+/* ---- route arc (built on select) ---- */
+let routeMesh = null, routePulse = null;
+function clearRoute() { for (const o of [routeMesh, routePulse]) if (o) { scene.remove(o); o.geometry.dispose(); } routeMesh = routePulse = null; }
+function buildRoute(block) {
+  clearRoute();
+  const p0 = new THREE.Vector3(wx(KIOSK.x), 54, wz(KIOSK.y));
+  const tgt = block.mesh.position, H = block.mesh.userData.H;
+  const p3 = new THREE.Vector3(tgt.x, H + 26, tgt.z);
+  const mid = p0.clone().add(p3).multiplyScalar(0.5);
+  mid.y = Math.max(p0.y, p3.y) + p0.distanceTo(p3) * 0.28;   // lift the arc
+  const curve = new THREE.QuadraticBezierCurve3(p0, mid, p3);
+  const col = new THREE.Color(KIT[block.id].c);
+  routeMesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 60, 4, 10, false),
+    new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.85, roughness: 0.35 }));
+  scene.add(routeMesh);
+  routePulse = new THREE.Mesh(new THREE.SphereGeometry(9, 20, 14),
+    new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: col, emissiveIntensity: 0.9 }));
+  routePulse.position.copy(p3);
+  scene.add(routePulse);
+}
+
+/* ---- selection + camera fly ---- */
+let selected = null, tween = null;
+function easeIO(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+function flyTo(camTo, tgtTo, ms = 900) {
+  tween = { c0: camera.position.clone(), c1: camTo, t0: controls.target.clone(), t1: tgtTo, start: performance.now(), ms };
+}
+function select(block) {
+  if (selected === block) return;
+  if (selected) { selected.mesh.material.emissive.setHex(0x000000); dropBlock(selected); }
+  selected = block;
+  block.mesh.material.emissive.copy(block.mesh.material.color).multiplyScalar(0.35);
+  raiseBlock(block);
+  // dim the rest
+  for (const b of blocks) b.mesh.material.opacity = (b === block) ? 1 : 0.55, b.mesh.material.transparent = (b !== block);
+  buildRoute(block);
+  // camera eases to a 3/4 view of the block
+  const p = block.mesh.position, H = block.mesh.userData.H;
+  const camTo = new THREE.Vector3(p.x + 210, H + 360, p.z + 430);
+  flyTo(camTo, new THREE.Vector3(p.x, H * 0.5, p.z));
+  needsRender = true;
+}
+function clearSelect() {
+  if (!selected) return;
+  selected.mesh.material.emissive.setHex(0x000000); dropBlock(selected);
+  for (const b of blocks) b.mesh.material.opacity = 1, b.mesh.material.transparent = false;
+  clearRoute(); selected = null; needsRender = true;
+}
+let lifts = new Map();
+function raiseBlock(b) { lifts.set(b, { from: b.mesh.position.y, to: b.mesh.userData.baseY + 26, start: performance.now() }); }
+function dropBlock(b) { lifts.set(b, { from: b.mesh.position.y, to: b.mesh.userData.baseY, start: performance.now() }); }
+
+/* ---- raycast pick ---- */
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let downXY = null;
+renderer.domElement.addEventListener('pointerdown', e => downXY = [e.clientX, e.clientY]);
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!downXY || Math.hypot(e.clientX - downXY[0], e.clientY - downXY[1]) > 6) return;   // ignore drags
+  ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const hit = ray.intersectObjects(blocks.map(b => b.mesh))[0];
+  if (hit) select(blocks.find(b => b.mesh === hit.object)); else clearSelect();
+});
+
+/* ---- views + theme ---- */
+const DAY = { bg: 0xeef2f8, ground: 0xd7dfea, hemiG: 0xb9c3d2, hemiI: 0.55, sunI: 1.15 };
+const NIGHT = { bg: 0x0b0f16, ground: 0x11151d, hemiG: 0x20252f, hemiI: 0.4, sunI: 0.9 };
+function applyTheme(th) {
+  scene.background = new THREE.Color(th.bg);
+  scene.fog = new THREE.Fog(th.bg, 1600, 3400);
+  groundMat.color.setHex(th.ground);
+  hemi.groundColor.setHex(th.hemiG); hemi.intensity = th.hemiI; sun.intensity = th.sunI;
+  needsRender = true;
+}
+let night = false;
+applyTheme(DAY);
+const homeCam = camera.position.clone(), homeTgt = controls.target.clone();
+document.getElementById('btnReset').onclick = e => {
+  clearSelect(); flyTo(homeCam.clone(), homeTgt.clone()); setTool(e.target);
+};
+document.getElementById('btnTop').onclick = e => {
+  clearSelect(); flyTo(new THREE.Vector3(0, 1500, 1), new THREE.Vector3(0, 0, 0)); setTool(e.target);
+};
+document.getElementById('btnTheme').onclick = () => { night = !night; applyTheme(night ? NIGHT : DAY); };
+function setTool(btn) { document.querySelectorAll('#tools button').forEach(b => b.classList.toggle('on', b === btn)); }
+
+/* ---- resize ---- */
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  renderer.setSize(w, h); labelRenderer.setSize(w, h); needsRender = true;
+}
+addEventListener('resize', resize); resize();
+
+/* ---- render (on-demand-ish: always cheap, pulses drive frames) ---- */
+function loop(now) {
+  requestAnimationFrame(loop);
+  controls.update();
+  // block lift tweens
+  for (const [b, t] of lifts) {
+    const k = Math.min(1, (now - t.start) / 260);
+    b.mesh.position.y = t.from + (t.to - t.from) * easeIO(k);
+    if (k >= 1) lifts.delete(b);
+    needsRender = true;
+  }
+  // camera fly tween
+  if (tween) {
+    const k = Math.min(1, (now - tween.start) / tween.ms), e = easeIO(k);
+    camera.position.lerpVectors(tween.c0, tween.c1, e);
+    controls.target.lerpVectors(tween.t0, tween.t1, e);
+    if (k >= 1) tween = null;
+    needsRender = true;
+  }
+  // gentle pulse on the destination + you-are-here
+  const pulse = 1 + Math.sin(now * 0.005) * 0.18;
+  hereTop.scale.setScalar(pulse);
+  if (routePulse) { routePulse.scale.setScalar(pulse); needsRender = true; }
+  needsRender = true;   // controls damping; prototype renders continuously (production = invalidate-on-change)
+  if (needsRender) { renderer.render(scene, camera); labelRenderer.render(scene, camera); needsRender = false; }
+}
+document.getElementById('loading').remove();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
