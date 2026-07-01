@@ -120,10 +120,10 @@ const MapKiosk = (function () {
   function render3D(container, id, lang, theme) {
     const key = (id && (kitchenOf(id) || {}).occupied) ? "top" : "iso";
     A.args = { container, id, lang, theme };
-    if (!A.cam) { A.cam = key === "top" ? CAM_TOP : CAM_ISO; A.key = key; return drawScene(A.cam); }
+    if (!A.cam) { A.cam = key === "top" ? CAM_TOP : CAM_ISO; A.key = key; return drawScene(A.cam, key === "iso"); }
     if (key !== A.key) {
       A.key = key;
-      if (key === "iso" || reduceMotion()) { stopAnim(); A.cam = key === "top" ? CAM_TOP : CAM_ISO; return drawScene(A.cam); }  // snap back to iso
+      if (key === "iso" || reduceMotion()) { stopAnim(); A.cam = key === "top" ? CAM_TOP : CAM_ISO; return drawScene(A.cam, key === "iso"); }  // snap back to iso (rise-in the blocks)
       A.from = A.cam; A.to = CAM_TOP; A.t0 = performance.now(); A.dur = 1050;                                                   // animate up to top-down (slightly slower, smoother)
       if (!A.raf) A.raf = requestAnimationFrame(tick);
       return;
@@ -137,7 +137,7 @@ const MapKiosk = (function () {
     A.raf = e < 1 ? requestAnimationFrame(tick) : (A.cam = A.to, drawScene(A.cam), 0);
   }
 
-  function drawScene(C) {
+  function drawScene(C, rise) {
     const { container, id, lang, theme } = A.args;
     const W = FP.viewBox.w, H = FP.viewBox.h, c = FP.corridor, k = FP.kiosk;
     const bright = theme === "bright";
@@ -162,7 +162,9 @@ const MapKiosk = (function () {
 
     // units painter-sorted far -> near for the current camera angle
     const entries = Object.entries(FP.units).sort((a, b) => depthKey(a[1], C) - depthKey(b[1], C));
+    let _bi = -1;
     for (const [uid, u] of entries) {
+      _bi++;
       const kk = kitchenOf(uid), isSel = uid === id, occ = kk.occupied;
       const col = occ ? kk.color : (bright ? "#b4bfce" : "#3a414e");
       const base = isSel ? col : mixc(col, neutral, bright ? 0.10 : 0.20);
@@ -188,7 +190,9 @@ const MapKiosk = (function () {
       const topPoly = `<polygon points="${T.map(ps).join(" ")}" style="fill:${top};stroke:${isSel ? lighten(col, .4) : "rgba(0,0,0,.14)"};stroke-width:${isSel ? 2 : 1}"/>`;
       const sheen = `<polygon points="${T.map(ps).join(" ")}" style="fill:url(#fp3Sheen)" pointer-events="none"/>`;
       const body = `${wallSvg}${topPoly}${sheen}`;
-      s += `<g data-uid="${uid}" class="fp3-unit"${isSel ? ` filter="url(#fp3Glow)"` : ""}>${isSel ? body : `<g filter="url(#fpSoft)">${body}</g>`}${inner}</g>`;
+      const gcls = "fp3-unit" + (isSel ? " fp3-sel" : (id ? " fp3-dim" : "")) + (rise ? " fp3-rise" : "");
+      const gstyle = rise ? ` style="animation-delay:${(_bi * 0.028).toFixed(3)}s"` : "";
+      s += `<g data-uid="${uid}" class="${gcls}"${isSel ? ` filter="url(#fp3Glow)"` : ""}${gstyle}>${isSel ? body : `<g filter="url(#fpSoft)">${body}</g>`}${inner}</g>`;
     }
 
     if (id && selOcc) { const rp = routePoints(id).map((p) => ps(pj(p[0], p[1], 6, C))).join(" "), end = routePoints(id).at(-1), ep = pj(end[0], end[1], 6, C);
@@ -197,6 +201,7 @@ const MapKiosk = (function () {
 
     const kp = pj(k.x, k.y, 6, C);
     s += `<rect x="${(kp[0] - 58).toFixed(1)}" y="${(kp[1] - 24).toFixed(1)}" width="116" height="52" rx="10" fill="#ffffff" stroke="${laneStroke}" stroke-width="1.5"/>
+      <circle class="fp3-here-ring" cx="${kp[0].toFixed(1)}" cy="${(kp[1] - 5).toFixed(1)}" r="6"/>
       <circle class="fp-here-dot" cx="${kp[0].toFixed(1)}" cy="${(kp[1] - 5).toFixed(1)}" r="6"/>
       <text class="fp-here-label" x="${kp[0].toFixed(1)}" y="${(kp[1] + 16).toFixed(1)}" style="font-size:13px">${I18N.youAreHere[lang]}</text>`;
 

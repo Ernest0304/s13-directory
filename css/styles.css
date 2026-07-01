@@ -151,7 +151,7 @@ h1, h2, h3 { letter-spacing: -.02em; }
 @keyframes routeReveal { from { opacity: 0; } to { opacity: 1; } }
 .fp-route-end { transform-box: fill-box; transform-origin: center; animation: routeEnd .4s var(--ease) .72s both; }
 @keyframes routeEnd { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .fp-route-bg, .fp-route, .fp-route-end { animation: none !important; opacity: .9; } .fp-route { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .fp-route-bg, .fp-route, .fp-route-end, .fp3-rise, .fp3-here-ring { animation: none !important; } .fp-route-bg { opacity: .9; } .fp-route { opacity: 1; } .fp3-rise { opacity: 1; transform: none; } }
 .fp-here-ring { fill: none; stroke: var(--teal); stroke-width: 4; animation: ring 1.9s ease-out infinite; }
 .fp-here-dot { fill: var(--teal); stroke: var(--map-bg); stroke-width: 4; }
 .fp-here-label { fill: var(--teal); font-size: 19px; font-weight: 800; text-anchor: middle; letter-spacing: .06em; }
@@ -251,7 +251,9 @@ h1, h2, h3 { letter-spacing: -.02em; }
   width: clamp(278px, 28vw, 440px); border-radius: var(--r-lg); padding: clamp(12px, 1.3vw, 20px);
   display: flex; flex-direction: column; gap: clamp(9px, 1.1vh, 15px); overflow: hidden;
 }
-.main-a .browse-float .filters { flex: none; flex-wrap: wrap; overflow: visible; padding: 0; gap: clamp(6px, .7vw, 10px); }
+.main-a .browse-float .filters { flex: none; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; padding: 0 0 5px; gap: clamp(6px, .7vw, 10px); scrollbar-width: none; -webkit-overflow-scrolling: touch; -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); mask-image: linear-gradient(to right, #000 88%, transparent); }
+.main-a .browse-float .filters::-webkit-scrollbar { display: none; }
+.main-a .browse-float .filters .chip { flex: 0 0 auto; }
 
 /* selected detail — tinted card above the list; hidden until a kitchen is picked */
 .main-a .browse-float .info-panel {
@@ -294,3 +296,19 @@ h1, h2, h3 { letter-spacing: -.02em; }
   font-size: clamp(11px, 1vw, 15px); gap: clamp(12px, 1.5vw, 22px);
   max-width: calc(100% - clamp(320px, 33vw, 500px));
 }
+
+/* ===================== bug fix + floor-plan animations (rise / focus / ping) ===================== */
+/* logo badges are circular everywhere — the Option A rail override had made them rounded squares */
+.main-a .browse-float .shopcard .disc.has-logo,
+.main-a .browse-float .info-panel .info-sel .disc.has-logo { border-radius: 50%; }
+
+/* (2) block rise-in — staggered, plays on entering the map / returning to browse */
+.fp3-rise { animation: blockRise .55s var(--ease) both; }
+@keyframes blockRise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* (3) selected focus — non-selected blocks fade back so the pick + route pop */
+.fp3-dim { opacity: .55; }
+
+/* (6) you-are-here — soft sonar ping around the dot */
+.fp3-here-ring { fill: none; stroke: var(--teal); stroke-width: 3; animation: ping3 1.9s ease-out infinite; }
+@keyframes ping3 { 0% { r: 6; opacity: .7; } 70% { opacity: 0; } 100% { r: 22; opacity: 0; } }
