@@ -143,9 +143,15 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .fp-unit-name { fill: var(--map-label); font-size: 29px; font-weight: 600; text-anchor: middle; }
 .fp-unit-icon { font-size: 46px; text-anchor: middle; }
 .fp-entrance-label { fill: var(--map-room-label); font-size: 19px; font-weight: 700; text-anchor: middle; letter-spacing: .04em; }
-.fp-route-bg { fill: none; stroke: var(--route-bg); stroke-width: 15; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }
-.fp-route { fill: none; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 22; animation: flow 1.1s linear infinite; filter: drop-shadow(0 0 6px currentColor); }
+.fp-route-bg { fill: none; stroke: var(--route-bg); stroke-width: 15; stroke-linecap: round; stroke-linejoin: round; opacity: .9; stroke-dasharray: 1; animation: routeDraw .85s var(--ease) forwards; }
+.fp-route { fill: none; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 22; animation: flow 1.1s linear infinite, routeReveal .45s ease .5s both; filter: drop-shadow(0 0 6px currentColor); }
 @keyframes flow { to { stroke-dashoffset: -23; } }
+/* route "draw-on": trace the backing line from start → destination, then dots + end pop in */
+@keyframes routeDraw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes routeReveal { from { opacity: 0; } to { opacity: 1; } }
+.fp-route-end { transform-box: fill-box; transform-origin: center; animation: routeEnd .4s var(--ease) .72s both; }
+@keyframes routeEnd { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .fp-route-bg, .fp-route, .fp-route-end { animation: none !important; opacity: .9; } .fp-route { opacity: 1; } }
 .fp-here-ring { fill: none; stroke: var(--teal); stroke-width: 4; animation: ring 1.9s ease-out infinite; }
 .fp-here-dot { fill: var(--teal); stroke: var(--map-bg); stroke-width: 4; }
 .fp-here-label { fill: var(--teal); font-size: 19px; font-weight: 800; text-anchor: middle; letter-spacing: .06em; }

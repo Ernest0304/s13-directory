@@ -192,8 +192,8 @@ const MapKiosk = (function () {
     }
 
     if (id && selOcc) { const rp = routePoints(id).map((p) => ps(pj(p[0], p[1], 6, C))).join(" "), end = routePoints(id).at(-1), ep = pj(end[0], end[1], 6, C);
-      s += `<polyline class="fp-route-bg" points="${rp}"/><polyline class="fp-route" points="${rp}" style="stroke:${brand}"/>
-            <circle cx="${ep[0].toFixed(1)}" cy="${ep[1].toFixed(1)}" r="12" style="fill:${brand};stroke:#fff;stroke-width:3"/>`; }
+      s += `<polyline class="fp-route-bg" pathLength="1" points="${rp}"/><polyline class="fp-route" points="${rp}" style="stroke:${brand}"/>
+            <circle class="fp-route-end" cx="${ep[0].toFixed(1)}" cy="${ep[1].toFixed(1)}" r="12" style="fill:${brand};stroke:#fff;stroke-width:3"/>`; }
 
     const kp = pj(k.x, k.y, 6, C);
     s += `<rect x="${(kp[0] - 58).toFixed(1)}" y="${(kp[1] - 24).toFixed(1)}" width="116" height="52" rx="10" fill="#ffffff" stroke="${laneStroke}" stroke-width="1.5"/>
