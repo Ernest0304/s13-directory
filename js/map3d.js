@@ -115,6 +115,21 @@ const MapKiosk = (function () {
     }
     scene._svc = scene.children.filter(o => o.userData && o.userData.svcKey);
 
+    // doors (glass door markers, same placement rule as the SVG map: (x,y)=start, span w along a1)
+    const D2R = Math.PI / 180;
+    const postMat = new THREE.MeshStandardMaterial({ color: 0x77808f, roughness: .55 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0xcfe0f2, roughness: .12, metalness: .1, transparent: true, opacity: .5 });
+    for (const d of (FP.doors || [])) {
+      const a1 = (d.rot - 90) * D2R, half = d.w / 2, hh = 44;
+      const cx = d.x + half * Math.cos(a1), cy = d.y + half * Math.sin(a1);
+      const g = new THREE.Group();
+      const p1 = new THREE.Mesh(new THREE.BoxGeometry(7, hh, 8), postMat); p1.position.set(-half, hh / 2, 0); p1.castShadow = true;
+      const p2 = new THREE.Mesh(new THREE.BoxGeometry(7, hh, 8), postMat); p2.position.set(half, hh / 2, 0); p2.castShadow = true;
+      const glass = new THREE.Mesh(new THREE.BoxGeometry(d.w, hh * .78, 3.5), glassMat); glass.position.set(0, hh * .45, 0);
+      g.add(p1, p2, glass);
+      g.position.set(wx(cx), 0, wz(cy)); g.rotation.y = -a1; scene.add(g);
+    }
+
     // kitchen blocks
     for (const [id, u] of Object.entries(FP.units)) {
       const kk = kitchenOf(id), occ = !!(kk && kk.occupied);
