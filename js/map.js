@@ -143,11 +143,11 @@ const MapKiosk = (function () {
     const bright = theme === "bright";
     const selK = id ? kitchenOf(id) : null, selOcc = !!(selK && selK.occupied);
     const neutral = bright ? "#e9edf4" : "#191d28";
-    const floorFill = bright ? "#cdd6e3" : "#10151e";
-    const floorStroke = bright ? "#bdc8d8" : "rgba(255,255,255,.06)";
+    const floorFill = bright ? "#d7dfea" : "#10151e";
+    const floorStroke = bright ? "#c3cddb" : "rgba(255,255,255,.06)";
     const laneFill = bright ? "#ffffff" : "#626c78";
     const laneStroke = bright ? "#bcc7d6" : "#717c89";
-    const roomFill = bright ? "#c0cad9" : "#283341";
+    const roomFill = bright ? "#c7d1de" : "#283341";
     const doorCol = bright ? "#48526a" : "#cdd5e0";
     const brand = selOcc ? selK.color : "#8A93A4";
     const qp = (x, y, w, h, z) => `${ps(pj(x, y, z, C))} ${ps(pj(x + w, y, z, C))} ${ps(pj(x + w, y + h, z, C))} ${ps(pj(x, y + h, z, C))}`;
@@ -164,7 +164,7 @@ const MapKiosk = (function () {
     const entries = Object.entries(FP.units).sort((a, b) => depthKey(a[1], C) - depthKey(b[1], C));
     for (const [uid, u] of entries) {
       const kk = kitchenOf(uid), isSel = uid === id, occ = kk.occupied;
-      const col = occ ? kk.color : (bright ? "#aeb6c4" : "#3a414e");
+      const col = occ ? kk.color : (bright ? "#b4bfce" : "#3a414e");
       const base = isSel ? col : mixc(col, neutral, bright ? 0.10 : 0.20);
       const top = isSel ? lighten(col, 0.16) : base;
       const zTop = isSel ? BH * 1.35 : BH;
@@ -185,7 +185,10 @@ const MapKiosk = (function () {
       } else {
         inner = `<text class="fp3-name" x="${ct[0].toFixed(1)}" y="${(ct[1] + 6).toFixed(1)}" style="fill:${txt};font-size:22px;font-weight:800">${code}</text>`;
       }
-      s += `<g data-uid="${uid}" class="fp3-unit"${isSel ? ` filter="url(#fp3Glow)"` : ""}>${wallSvg}<polygon points="${T.map(ps).join(" ")}" style="fill:${top};stroke:${isSel ? lighten(col, .4) : "rgba(0,0,0,.16)"};stroke-width:${isSel ? 2 : 1}"/>${inner}</g>`;
+      const topPoly = `<polygon points="${T.map(ps).join(" ")}" style="fill:${top};stroke:${isSel ? lighten(col, .4) : "rgba(0,0,0,.14)"};stroke-width:${isSel ? 2 : 1}"/>`;
+      const sheen = `<polygon points="${T.map(ps).join(" ")}" style="fill:url(#fp3Sheen)" pointer-events="none"/>`;
+      const body = `${wallSvg}${topPoly}${sheen}`;
+      s += `<g data-uid="${uid}" class="fp3-unit"${isSel ? ` filter="url(#fp3Glow)"` : ""}>${isSel ? body : `<g filter="url(#fpSoft)">${body}</g>`}${inner}</g>`;
     }
 
     if (id && selOcc) { const rp = routePoints(id).map((p) => ps(pj(p[0], p[1], 6, C))).join(" "), end = routePoints(id).at(-1), ep = pj(end[0], end[1], 6, C);
@@ -197,13 +200,15 @@ const MapKiosk = (function () {
       <circle class="fp-here-dot" cx="${kp[0].toFixed(1)}" cy="${(kp[1] - 5).toFixed(1)}" r="6"/>
       <text class="fp-here-label" x="${kp[0].toFixed(1)}" y="${(kp[1] + 16).toFixed(1)}" style="font-size:13px">${I18N.youAreHere[lang]}</text>`;
 
-    container.innerHTML = `<svg viewBox="${viewBoxFor(C)}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="3D floor plan"><defs>${glowDefs(brand, "fp3Glow")}</defs>${s}</svg>`;
+    container.innerHTML = `<svg viewBox="${viewBoxFor(C)}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="3D floor plan"><defs>${glowDefs(brand, "fp3Glow", bright)}</defs>${s}</svg>`;
   }
 
   /* ---- helpers ---------------------------------------------------------- */
-  function glowDefs(brand, glowId) {
+  function glowDefs(brand, glowId, bright) {
+    const shCol = bright ? "#243247" : "#04060b", shOp = bright ? 0.3 : 0.5, shBlur = bright ? 9 : 7, shDy = bright ? 8 : 5, sheen = bright ? 0.2 : 0.16;
     return `<filter id="${glowId || "fpGlow"}" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="0" stdDeviation="11" flood-color="${brand}" flood-opacity="0.58"/></filter>
-      <filter id="fpSoft" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#000" flood-opacity="0.35"/></filter>`;
+      <filter id="fpSoft" x="-30%" y="-30%" width="160%" height="185%"><feDropShadow dx="0" dy="${shDy}" stdDeviation="${shBlur}" flood-color="${shCol}" flood-opacity="${shOp}"/></filter>
+      <linearGradient id="fp3Sheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="${sheen}"/><stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/></linearGradient>`;
   }
   function parse(hex) { const h = hex.replace("#", ""); return [parseInt(h.substr(0, 2), 16), parseInt(h.substr(2, 2), 16), parseInt(h.substr(4, 2), 16)]; }
   function rgba(hex, a) { const [r, g, b] = parse(hex); return `rgba(${r},${g},${b},${a})`; }
