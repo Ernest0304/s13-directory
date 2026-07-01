@@ -113,8 +113,16 @@
   }
   function setFilter(cat) {
     filterCat = cat;
+    // drop a selection that no longer belongs to the chosen category (else its detail card
+    // lingers over a "no kitchens" list)
+    let deselected = false;
+    if (currentId) { const k = byId(currentId); if (k && cat !== "all" && k.cat !== cat) { currentId = null; deselected = true; } }
     document.querySelectorAll("#filters .chip").forEach((b) => b.classList.toggle("active", b.dataset.cat === cat));
+    // the chips scroll horizontally — keep the active one in view so it never lands off-screen
+    const ac = document.querySelector("#filters .chip.active");
+    if (ac) ac.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
     buildShopRow();
+    if (deselected && screens.main.classList.contains("active")) renderMain();
   }
 
   /* ---------- kitchen cards (occupied units only; vacant units live on the map) ---------- */

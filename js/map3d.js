@@ -51,15 +51,16 @@ const MapKiosk = (function () {
   /* ---- Three.js state ---- */
   let THREE, OrbitControls, RoundedBoxGeometry, CSS2DRenderer, CSS2DObject;
   let ready = false, starting = false, pending = null, cont = null;
-  let renderer, lblRenderer, scene, camera, controls, sun, hemi, fill, groundMat, laneMat, svcMat;
+  let renderer, lblRenderer, scene, camera, controls, sun, hemi, fill, groundMat, laneMat, svcMat, outMat;
   const blocks = {};   // id -> { mesh, occ, baseY, H, labelEl, col }
   let hereGrp = null, routeObj = null, endObj = null, raf = 0;
   let state = { id: null, lang: "en", theme: "bright", view: "3d" };
   let tween = null;
   const easeIO = (t) => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
-  const DAY = { bg: 0xeef2f8, grd: 0xd7dfea, hg: 0xb9c3d2, hi: .6, si: 1.15, lane: 0xffffff, svc: 0xc7d1de, vac: 0xb4bfce };
-  const NIGHT = { bg: 0x0b0f16, grd: 0x0f131b, hg: 0x1f2630, hi: .45, si: .9, lane: 0x5b6470, svc: 0x2a323e, vac: 0x39424f };
+  const DAY = { bg: 0xeef2f8, grd: 0xd7dfea, hg: 0xb9c3d2, hi: .6, si: 1.15, lane: 0xffffff, svc: 0xc7d1de, vac: 0xb4bfce, out: 0xbeb4a3 };
+  const NIGHT = { bg: 0x0b0f16, grd: 0x0f131b, hg: 0x1f2630, hi: .45, si: .9, lane: 0x5b6470, svc: 0x2a323e, vac: 0x39424f, out: 0x33302b };
+  const isOutdoor = (key) => key === "loadingBay" || key === "carPark";
 
   async function setup(container) {
     cont = container;
@@ -107,11 +108,15 @@ const MapKiosk = (function () {
       m.position.set(wx(x + w / 2), 1.2, wz(y + h / 2)); m.receiveShadow = true; scene.add(m);
     }
     svcMat = new THREE.MeshStandardMaterial({ color: DAY.svc, roughness: .85 });
+    outMat = new THREE.MeshStandardMaterial({ color: DAY.out, roughness: .98 });   // loading bay / car park: outside the facility
     for (const s of FP.service) {
-      const m = new THREE.Mesh(new RoundedBoxGeometry(s.w - GAP, H_SVC, s.h - GAP, 3, 5), svcMat);
-      m.position.set(wx(s.x + s.w / 2), H_SVC / 2, wz(s.y + s.h / 2)); m.castShadow = m.receiveShadow = true; scene.add(m);
-      const lab = mkLabel(`<div class="m3-svc">${I18N[s.key][state.lang]}</div>`);
-      lab.position.set(0, H_SVC / 2 + 2, 0); m.add(lab); m.userData.svcKey = s.key; m.userData.lab = lab;
+      const out = isOutdoor(s.key);
+      let m, ly;
+      if (out) { m = new THREE.Mesh(new THREE.BoxGeometry(s.w - 4, 3, s.h - 4), outMat); m.position.set(wx(s.x + s.w / 2), 1.6, wz(s.y + s.h / 2)); m.receiveShadow = true; ly = 5; }
+      else { m = new THREE.Mesh(new RoundedBoxGeometry(s.w - GAP, H_SVC, s.h - GAP, 3, 5), svcMat); m.position.set(wx(s.x + s.w / 2), H_SVC / 2, wz(s.y + s.h / 2)); m.castShadow = m.receiveShadow = true; ly = H_SVC / 2 + 2; }
+      scene.add(m);
+      const lab = mkLabel(`<div class="m3-svc${out ? " out" : ""}">${I18N[s.key][state.lang]}</div>`);
+      lab.position.set(0, ly, 0); m.add(lab); m.userData.svcKey = s.key; m.userData.lab = lab;
     }
     scene._svc = scene.children.filter(o => o.userData && o.userData.svcKey);
 
@@ -199,6 +204,7 @@ const MapKiosk = (function () {
     groundMat.color.setHex(t.grd);
     laneMat.color.setHex(t.lane);
     svcMat.color.setHex(t.svc);
+    outMat.color.setHex(t.out);
     hemi.groundColor.setHex(t.hg); hemi.intensity = t.hi; sun.intensity = t.si;
     for (const id in blocks) { const b = blocks[id]; if (!b.occ) { b.col.setHex(t.vac); if (!isSel(id)) b.mesh.material.color.setHex(t.vac); } }
   }
@@ -242,7 +248,7 @@ const MapKiosk = (function () {
     if (themeChanged) applyTheme(theme === "bright" ? DAY : NIGHT);
     // labels (content depends on lang)
     for (const bid in blocks) blocks[bid].labelEl.innerHTML = blockLabelHTML(bid);
-    for (const o of (scene._svc || [])) o.userData.lab.element.innerHTML = `<div class="m3-svc">${I18N[o.userData.svcKey][lang]}</div>`;
+    for (const o of (scene._svc || [])) o.userData.lab.element.innerHTML = `<div class="m3-svc${isOutdoor(o.userData.svcKey) ? " out" : ""}">${I18N[o.userData.svcKey][lang]}</div>`;
     hereGrp.userData.lab.element.innerHTML = `<div class="m3-here">📍 ${I18N.youAreHere[lang]}</div>`;
     // selection: reset then highlight
     for (const bid in blocks) { const b = blocks[bid];
