@@ -90,7 +90,7 @@ h1, h2, h3 { letter-spacing: -.02em; }
 @keyframes tapbob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
 
 /* ===================== MAIN ===================== */
-.main { padding: clamp(16px, 2vw, 34px); gap: clamp(12px, 1.6vh, 22px); }
+.main { padding: clamp(10px, 1.3vw, 22px); gap: clamp(8px, 1vh, 14px); }
 .main-head { display: flex; align-items: center; justify-content: flex-start; gap: clamp(14px, 2vw, 30px); padding-right: clamp(150px, 17vw, 240px); }
 .home-btn { font: inherit; font-weight: 800; cursor: pointer; color: var(--ink); background: var(--glass-2); border: 1px solid var(--line); border-radius: 999px; padding: .6em 1.2em; font-size: clamp(14px, 1.4vw, 19px); }
 
@@ -100,7 +100,7 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .map-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: clamp(10px, 1.4vw, 16px) clamp(14px, 1.8vw, 22px); border-bottom: 1px solid var(--line); color: var(--muted); font-weight: 700; letter-spacing: .06em; font-size: clamp(12px, 1.3vw, 16px); text-transform: uppercase; }
 .map-card-head .legend .h { display: inline-flex; align-items: center; gap: .45em; text-transform: none; letter-spacing: 0; font-weight: 600; font-size: clamp(11px, 1.1vw, 14px); }
 .map-card-head .legend .h::before { content: ""; width: .8em; height: .8em; border-radius: 50%; background: var(--teal); }
-.map { flex: 1; min-height: 0; display: flex; padding: clamp(8px, 1.2vw, 18px); }
+.map { flex: 1; min-height: 0; display: flex; padding: clamp(4px, 0.8vw, 12px); }
 .map svg { width: 100%; height: 100%; }
 
 /* info panel (right of the map) */
@@ -121,7 +121,7 @@ h1, h2, h3 { letter-spacing: -.02em; }
 .info-sel .dirbox .pin { font-size: 1.3em; flex: none; }
 
 /* shop row */
-.shoprow { flex: none; display: flex; gap: clamp(10px, 1.2vw, 18px); overflow-x: auto; padding: 2px clamp(2px, .5vw, 8px) 8px; height: clamp(150px, 22vh, 220px); scrollbar-width: none; }
+.shoprow { flex: none; display: flex; gap: clamp(10px, 1.2vw, 18px); overflow-x: auto; padding: 2px clamp(2px, .5vw, 8px) 8px; height: clamp(135px, 17vh, 180px); scrollbar-width: none; }
 .shoprow::-webkit-scrollbar { display: none; }
 .shopcard { flex: 0 0 auto; width: clamp(160px, 15vw, 220px); display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; text-align: left; font: inherit; color: var(--ink); cursor: pointer; padding: clamp(12px, 1.2vw, 20px); border-radius: var(--r-md); overflow: hidden; position: relative;
   background: radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--c) 16%, transparent), transparent 60%), var(--glass); border: 1px solid var(--line); box-shadow: var(--shadow); transition: transform .14s var(--ease), border-color .2s; }
