@@ -62,6 +62,13 @@ const MapKiosk = (function () {
 
   const DAY = { bg: 0xeef2f8, grd: 0xd7dfea, hg: 0xb9c3d2, hi: .6, si: 1.15, lane: 0xffffff, svc: 0xc7d1de, vac: 0xb4bfce, out: 0xbeb4a3 };
   const NIGHT = { bg: 0x0b0f16, grd: 0x0f131b, hg: 0x1f2630, hi: .45, si: .9, lane: 0x5b6470, svc: 0x2a323e, vac: 0x39424f, out: 0x33302b };
+  // day-palette experiments — open with ?palette=swap / ?palette=soft to compare live
+  const PALETTES = {
+    swap: { grd: 0xffffff, lane: 0xd7dfea },                                  // strict swap: white base, walkways take the old base grey
+    soft: { grd: 0xffffff, lane: 0xe8edf4, vac: 0xc6cfdc, svc: 0xd4dce7 },    // mainstream light: white base, whisper-grey walkways, lighter vacants
+  };
+  const pv = (location.search.match(/[?&]palette=(\w+)/) || [])[1];
+  if (pv && PALETTES[pv]) Object.assign(DAY, PALETTES[pv]);
   const isOutdoor = (key) => key === "loadingBay" || key === "carPark";
 
   async function setup(container) {
