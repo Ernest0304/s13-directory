@@ -53,7 +53,7 @@ const MapKiosk = (function () {
   let ready = false, starting = false, pending = null, cont = null;
   let renderer, lblRenderer, scene, camera, controls, sun, hemi, fill, groundMat, laneMat, svcMat, outMat;
   const blocks = {};   // id -> { mesh, occ, baseY, H, labelEl, col }
-  let hereGrp = null, routeObj = null, endObj = null, raf = 0;
+  let hereGrp = null, routeObj = null, endObj = null, routePulses = [], routeCurve = null, routeDrawT0 = 0, routeIdx = 0, raf = 0;
   let state = { id: null, lang: "en", theme: "bright", view: "3d" };
   let tween = null;
   const easeIO = (t) => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
@@ -159,7 +159,12 @@ const MapKiosk = (function () {
     hl.position.y = 80; hereGrp.add(hl); hereGrp.userData.lab = hl;
     hereGrp.position.set(wx(FP.kiosk.x), 0, wz(FP.kiosk.y)); scene.add(hereGrp);
 
-    // pick
+    // pick — a canvas hit clicks a hidden [data-uid] proxy INSIDE #map, so selection flows
+    // through app.js's own #map click handler (works for occupied AND vacant units)
+    const proxyWrap = document.createElement("div");
+    proxyWrap.style.display = "none";
+    for (const uid of Object.keys(FP.units)) { const b = document.createElement("button"); b.dataset.uid = uid; proxyWrap.appendChild(b); }
+    container.appendChild(proxyWrap);
     const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(); let down = null;
     renderer.domElement.addEventListener("pointerdown", e => down = [e.clientX, e.clientY]);
     renderer.domElement.addEventListener("pointerup", e => {
@@ -168,17 +173,14 @@ const MapKiosk = (function () {
       ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
       ray.setFromCamera(ndc, camera);
       const hit = ray.intersectObjects(Object.values(blocks).map(b => b.mesh))[0];
-      if (hit) { const id = hit.object.userData.id;
-        // drive selection through the board's own logic (occupied kitchens have a card)
-        const card = document.querySelector('.shopcard[data-id="' + id + '"]');
-        if (card) card.click();
-      }
+      if (hit) { const p = proxyWrap.querySelector('[data-uid="' + hit.object.userData.id + '"]'); if (p) p.click(); }
     });
 
     addEventListener("resize", resize); resize();
     applyTheme(DAY, true);
     homeView(false);
     ready = true;
+    if (/[?&]debug/.test(location.search)) window.__m3 = { camera, controls, scene, wx, wz, get route() { return { routeObj, routeIdx, drawn: routeObj ? routeObj.geometry.drawRange.count : 0, pulses: routePulses.filter(p => p.visible).length }; } };
     loop();
     if (pending) { const p = pending; pending = null; apply(p.id, p.lang, p.theme, p.view); }
   }
@@ -218,27 +220,41 @@ const MapKiosk = (function () {
     if (anim) flyTo(pos, tgt); else { camera.position.copy(pos); controls.target.copy(tgt); }
   }
   function focusRoute(id) {
+    // tip the camera over to a straight top-down look framing kiosk → kitchen,
+    // matching the SVG board's flatten-on-select behaviour
     const b = blocks[id], k = new THREE.Vector3(wx(FP.kiosk.x), 0, wz(FP.kiosk.y));
     const mid = b.mesh.position.clone().setY(0).add(k).multiplyScalar(.5);
-    const span = b.mesh.position.distanceTo(k) + 260;
-    if (state.view === "2d") { flyTo(new THREE.Vector3(mid.x, Math.max(1100, span * 1.25), mid.z + 1), mid.clone().setY(0)); }
-    else { flyTo(new THREE.Vector3(mid.x + span * .1, span * .78, mid.z + span * .95), mid.clone().setY(30)); }
+    const span = b.mesh.position.distanceTo(k);
+    const h = Math.max(980, span * 1.25 + 240);
+    flyTo(new THREE.Vector3(mid.x, h, mid.z + 1), mid.clone().setY(0), 1050);
   }
 
   /* ---- route tube along the corridor ---- */
-  function clearRoute() { for (const o of [routeObj, endObj]) if (o) { scene.remove(o); o.geometry.dispose(); o.material.dispose(); } routeObj = endObj = null; }
+  function clearRoute() {
+    for (const o of [routeObj, endObj, ...routePulses]) if (o) { scene.remove(o); o.geometry.dispose(); o.material.dispose(); }
+    routeObj = endObj = null; routePulses = []; routeCurve = null;
+  }
   function buildRoute(id) {
     clearRoute();
     const pts = routePoints(id).map(p => new THREE.Vector3(wx(p[0]), 5, wz(p[1])));
-    const curve = new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.04);
+    routeCurve = new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.04);
     const col = new THREE.Color(safeCol((kitchenOf(id) || {}).color || "#0fae84"));
-    routeObj = new THREE.Mesh(new THREE.TubeGeometry(curve, 120, 6, 10, false),
-      new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: .8, roughness: .35 }));
+    const geo = new THREE.TubeGeometry(routeCurve, 140, 5.5, 10, false);
+    routeIdx = geo.index.count;
+    geo.setDrawRange(0, 0);                       // draw-on: revealed in loop(), like the SVG stroke-dashoffset trace
+    routeDrawT0 = performance.now();
+    routeObj = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: .75, roughness: .35 }));
     scene.add(routeObj);
+    // flowing dots that travel the corridor route (the SVG dasharray "flow" equivalent)
+    for (let i = 0; i < 5; i++) {
+      const s = new THREE.Mesh(new THREE.SphereGeometry(7.5, 16, 12),
+        new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: col, emissiveIntensity: .95 }));
+      s.userData.ph = i / 5; s.visible = false; scene.add(s); routePulses.push(s);
+    }
     const end = pts[pts.length - 1];
     endObj = new THREE.Mesh(new THREE.SphereGeometry(11, 20, 14),
       new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: col, emissiveIntensity: .9 }));
-    endObj.position.copy(end).setY(10); scene.add(endObj);
+    endObj.position.copy(end).setY(10); endObj.visible = false; scene.add(endObj);
   }
 
   /* ---- apply board state to the scene ---- */
@@ -260,8 +276,13 @@ const MapKiosk = (function () {
       const b = blocks[id];
       b.mesh.material.emissive.copy(b.mesh.material.color).multiplyScalar(.34);
       liftTo(b, b.baseY + 26);
-      if ((kitchenOf(id) || {}).occupied) buildRoute(id); else clearRoute();
-      if (idChanged || viewChanged) focusRoute(id);
+      if ((kitchenOf(id) || {}).occupied) {
+        buildRoute(id);
+        if (idChanged || viewChanged) focusRoute(id);   // flatten to top-down over the route
+      } else {
+        clearRoute();                                    // vacant: highlight only, keep the browse angle
+        if (idChanged || viewChanged) homeView(true);
+      }
     } else { clearRoute(); if (idChanged || viewChanged) homeView(true); }
   }
   function liftTo(b, to) { if (Math.abs(b.mesh.position.y - to) < .5) return; b.lift = { from: b.mesh.position.y, to, s: performance.now() }; }
@@ -276,7 +297,16 @@ const MapKiosk = (function () {
     if (tween) { const k = Math.min(1, (now - tween.s) / tween.ms), e = easeIO(k); camera.position.lerpVectors(tween.p0, tween.p1, e); controls.target.lerpVectors(tween.t0, tween.t1, e); if (k >= 1) tween = null; }
     const pulse = 1 + Math.sin(now * .005) * .16;
     const ball = hereGrp.getObjectByName("ball"); if (ball) ball.scale.setScalar(pulse);
-    if (endObj) endObj.scale.setScalar(pulse);
+    if (routeObj && routeCurve) {
+      const k = Math.min(1, (now - routeDrawT0) / 900);         // 0..1 draw-on progress
+      routeObj.geometry.setDrawRange(0, Math.round(routeIdx * easeIO(k)));
+      for (const p of routePulses) {
+        const t = (now * 0.00016 + p.userData.ph) % 1;          // arc-length position along the route
+        if (t <= k * .985) { p.visible = true; const q = routeCurve.getPointAt(t); p.position.set(q.x, 9, q.z); }
+        else p.visible = false;
+      }
+      if (endObj) { endObj.visible = k > .85; endObj.scale.setScalar(pulse); }
+    }
     if (mainOn) { renderer.render(scene, camera); lblRenderer.render(scene, camera); }
   }
 

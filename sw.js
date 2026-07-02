@@ -17,7 +17,7 @@
  * (Keep bumping ?v=N in index.html too — it busts the HTTP/CDN layer.)
  * ========================================================================== */
 
-const SW_VERSION = "s13-v22";
+const SW_VERSION = "s13-v23";
 const PRECACHE = "s13-precache-" + SW_VERSION; // app shell, purged on version bump
 const RUNTIME  = "s13-runtime";                // live content + logos, kept across updates
 
@@ -81,10 +81,15 @@ async function networkFirst(request, cacheName) {
   }
 }
 
-// cache-first (ignoreSearch) for immutable, ?v=N-versioned shell assets
+// cache-first for ?v=N-versioned assets. Precached shell matches by BARE path
+// (ignoreSearch — SW_VERSION bumps refresh it); runtime extras (e.g. the 3D
+// preview's map3d.js) match the EXACT url, so a ?v bump actually fetches the
+// new file instead of serving the old one forever.
 async function cacheFirst(request) {
-  const cached = await caches.match(request, { ignoreSearch: true });
-  if (cached) return cached;
+  const pre = await caches.open(PRECACHE).then((c) => c.match(request, { ignoreSearch: true }));
+  if (pre) return pre;
+  const rt = await caches.open(RUNTIME).then((c) => c.match(request));
+  if (rt) return rt;
   const res = await fetch(request);
   if (res && res.ok) {
     const cache = await caches.open(RUNTIME);
