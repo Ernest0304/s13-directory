@@ -53,22 +53,17 @@ const MapKiosk = (function () {
   /* ---- Three.js state ---- */
   let THREE, OrbitControls, RoundedBoxGeometry, CSS2DRenderer, CSS2DObject;
   let ready = false, starting = false, pending = null, cont = null;
-  let renderer, lblRenderer, scene, camera, controls, sun, hemi, fill, groundMat, laneMat, svcMat, outMat;
+  let renderer, lblRenderer, scene, camera, controls, sun, hemi, fill, groundMat, laneMat, svcMat, outMat, shadowMat;
   const blocks = {};   // id -> { mesh, occ, baseY, H, labelEl, col }
   let hereGrp = null, routeObj = null, endObj = null, routePulses = [], routeCurve = null, routeDrawT0 = 0, routeIdx = 0, raf = 0;
   let state = { id: null, lang: "en", theme: "bright", view: "3d" };
   let tween = null;
   const easeIO = (t) => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
-  const DAY = { bg: 0xeef2f8, grd: 0xd7dfea, hg: 0xb9c3d2, hi: .6, si: 1.15, lane: 0xffffff, svc: 0xc7d1de, vac: 0xb4bfce, out: 0xbeb4a3 };
-  const NIGHT = { bg: 0x0b0f16, grd: 0x0f131b, hg: 0x1f2630, hi: .45, si: .9, lane: 0x5b6470, svc: 0x2a323e, vac: 0x39424f, out: 0x33302b };
-  // day-palette experiments — open with ?palette=swap / ?palette=soft to compare live
-  const PALETTES = {
-    swap: { grd: 0xffffff, lane: 0xd7dfea },                                  // strict swap: white base, walkways take the old base grey
-    soft: { grd: 0xffffff, lane: 0xe8edf4, vac: 0xc6cfdc, svc: 0xd4dce7 },    // mainstream light: white base, whisper-grey walkways, lighter vacants
-  };
-  const pv = (location.search.match(/[?&]palette=(\w+)/) || [])[1];
-  if (pv && PALETTES[pv]) Object.assign(DAY, PALETTES[pv]);
+  // day palette — "soft light" (Ernest-approved): TRUE #ffffff base plate, whisper-grey
+  // walkways, lighter vacants; saturation lives in the tenant blocks + route only
+  const DAY = { bg: 0xeef2f8, grd: 0xffffff, hg: 0xb9c3d2, hi: .6, si: 1.15, lane: 0xe8edf4, svc: 0xd4dce7, vac: 0xc6cfdc, out: 0xbeb4a3, shOp: .2 };
+  const NIGHT = { bg: 0x0b0f16, grd: 0x0f131b, hg: 0x1f2630, hi: .45, si: .9, lane: 0x5b6470, svc: 0x2a323e, vac: 0x39424f, out: 0x33302b, shOp: .3 };
   const isOutdoor = (key) => key === "loadingBay" || key === "carPark";
 
   async function setup(container) {
@@ -107,15 +102,20 @@ const MapKiosk = (function () {
     sun.shadow.bias = -0.0004; sun.shadow.radius = 6; scene.add(sun);
     fill = new THREE.DirectionalLight(0xdfe8f5, .32); fill.position.set(-420, 520, -320); scene.add(fill);
 
-    groundMat = new THREE.MeshStandardMaterial({ color: DAY.grd, roughness: .96 });
+    // base plate + walkways are UNLIT so their hex is exact on screen (the plate really
+    // is #ffffff by day — no light/tonemap tint); a ShadowMaterial plane floating just
+    // above the lane tops catches the block shadows for both surfaces
+    groundMat = new THREE.MeshBasicMaterial({ color: DAY.grd, toneMapped: false, fog: false });
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(VBW + 320, VBH + 320), groundMat);
-    ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
-
-    laneMat = new THREE.MeshStandardMaterial({ color: DAY.lane, roughness: .85 });
+    ground.rotation.x = -Math.PI / 2; scene.add(ground);
+    laneMat = new THREE.MeshBasicMaterial({ color: DAY.lane, toneMapped: false, fog: false });
     for (const [x, y, w, h] of LANES) {
       const m = new THREE.Mesh(new THREE.BoxGeometry(w, 2, h), laneMat);
-      m.position.set(wx(x + w / 2), 1.2, wz(y + h / 2)); m.receiveShadow = true; scene.add(m);
+      m.position.set(wx(x + w / 2), 1.2, wz(y + h / 2)); scene.add(m);
     }
+    shadowMat = new THREE.ShadowMaterial({ opacity: DAY.shOp });
+    const shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(VBW + 320, VBH + 320), shadowMat);
+    shadowPlane.rotation.x = -Math.PI / 2; shadowPlane.position.y = 2.4; shadowPlane.receiveShadow = true; scene.add(shadowPlane);
     svcMat = new THREE.MeshStandardMaterial({ color: DAY.svc, roughness: .85 });
     outMat = new THREE.MeshStandardMaterial({ color: DAY.out, roughness: .98 });   // loading bay / car park: outside the facility
     for (const s of FP.service) {
@@ -216,6 +216,7 @@ const MapKiosk = (function () {
     laneMat.color.setHex(t.lane);
     svcMat.color.setHex(t.svc);
     outMat.color.setHex(t.out);
+    shadowMat.opacity = t.shOp;
     hemi.groundColor.setHex(t.hg); hemi.intensity = t.hi; sun.intensity = t.si;
     for (const id in blocks) { const b = blocks[id]; if (!b.occ) { b.col.setHex(t.vac); if (!isSel(id)) b.mesh.material.color.setHex(t.vac); } }
   }

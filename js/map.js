@@ -65,7 +65,7 @@ const MapKiosk = (function () {
     let units = "";
     for (const [uid, u] of Object.entries(FP.units)) {
       const kk = kitchenOf(uid), cx = u.x + u.w / 2, cy = u.y + u.h / 2, isSel = uid === id, occ = kk.occupied;
-      const col = occ ? kk.color : (bright ? "#aeb6c4" : "#3a414e"), code = uid.replace("K", "K-");
+      const col = occ ? kk.color : (bright ? "#b6c0cf" : "#3a414e"), code = uid.replace("K", "K-");
       const tf = isSel ? `fill:${idealText(col)};` : "";
       const rectStyle = isSel ? `fill:${rgba(col, .94)};stroke:${lighten(col, .35)};stroke-width:3` : `fill:${rgba(col, bright ? .17 : .13)};stroke:${rgba(col, bright ? .5 : .42)};stroke-width:1.5`;
       let inner;
@@ -145,11 +145,11 @@ const MapKiosk = (function () {
     const bright = theme === "bright";
     const selK = id ? kitchenOf(id) : null, selOcc = !!(selK && selK.occupied);
     const neutral = bright ? "#e9edf4" : "#191d28";
-    const floorFill = bright ? "#d7dfea" : "#10151e";
-    const floorStroke = bright ? "#c3cddb" : "rgba(255,255,255,.06)";
-    const laneFill = bright ? "#ffffff" : "#626c78";
+    const floorFill = bright ? "#ffffff" : "#10151e";
+    const floorStroke = bright ? "#dfe5ee" : "rgba(255,255,255,.06)";
+    const laneFill = bright ? "#e8edf4" : "#626c78";
     const laneStroke = bright ? "#bcc7d6" : "#717c89";
-    const roomFill = bright ? "#c7d1de" : "#283341";
+    const roomFill = bright ? "#d4dce7" : "#283341";
     const doorCol = bright ? "#48526a" : "#cdd5e0";
     const brand = selOcc ? selK.color : "#8A93A4";
     const qp = (x, y, w, h, z) => `${ps(pj(x, y, z, C))} ${ps(pj(x + w, y, z, C))} ${ps(pj(x + w, y + h, z, C))} ${ps(pj(x, y + h, z, C))}`;
@@ -168,7 +168,7 @@ const MapKiosk = (function () {
     for (const [uid, u] of entries) {
       _bi++;
       const kk = kitchenOf(uid), isSel = uid === id, occ = kk.occupied;
-      const col = occ ? kk.color : (bright ? "#b4bfce" : "#3a414e");
+      const col = occ ? kk.color : (bright ? "#c6cfdc" : "#3a414e");
       const base = isSel ? col : mixc(col, neutral, bright ? 0.10 : 0.20);
       const top = isSel ? lighten(col, 0.16) : base;
       const zTop = isSel ? BH * 1.35 : BH;
