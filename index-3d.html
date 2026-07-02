@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Smart City Kitchens · S13 · 3D Directory (preview)</title>
   <link rel="icon" type="image/png" href="img/icon-192.png" />
-  <link rel="stylesheet" href="css/styles.css?v=20" />
+  <link rel="stylesheet" href="css/styles.css?v=21" />
   <!-- Three.js resolved for map3d.js's dynamic imports -->
   <script type="importmap">
   { "imports": {
@@ -28,6 +28,10 @@
     .m3-av { color: #fff; font-size: 10px; opacity: .68; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
     .m3-svc { color: #eaf0f7; font-size: 11px; font-weight: 600; text-shadow: 0 1px 4px rgba(0,0,0,.55); }
     .m3-svc.out { color: #f4ead9; font-style: italic; }
+    /* day palette: vacant + service blocks are near-white — labels go ink, not white */
+    [data-theme="bright"] .m3-svc { color: #7c8697; text-shadow: none; }
+    [data-theme="bright"] .m3-svc.out { color: #a89a80; }
+    [data-theme="bright"] .m3-lab.vac .m3-code, [data-theme="bright"] .m3-lab.vac .m3-av { color: #6b7789; text-shadow: none; }
     .m3-here { color: #0fae84; font-weight: 800; font-size: 12px; letter-spacing: .04em; text-shadow: 0 2px 8px rgba(255,255,255,.7); }
     /* small preview tag */
     #d3tag { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 60;
@@ -90,12 +94,12 @@
     </section>
 
   </div>
-  <div id="d3tag">3D preview · drag map to rotate · same board, real WebGL floor plan</div>
+  <div id="d3tag">3D preview · drag to move · scroll / pinch to zoom · two-finger twist (or right-drag) to rotate</div>
 
   <script src="js/config.js"></script>
   <script src="js/data.js?v=18"></script>
   <script src="js/db.js?v=2"></script>
-  <script src="js/map3d.js?v=7"></script>
+  <script src="js/map3d.js?v=8"></script>
   <script src="js/app.js?v=12"></script>
 </body>
 </html>

@@ -57,12 +57,12 @@ const MapKiosk = (function () {
   const blocks = {};   // id -> { mesh, occ, baseY, H, labelEl, col }
   let hereGrp = null, routeObj = null, endObj = null, routePulses = [], routeCurve = null, routeDrawT0 = 0, routeIdx = 0, raf = 0;
   let state = { id: null, lang: "en", theme: "bright", view: "3d" };
-  let tween = null;
+  let tween = null, parked = false;
   const easeIO = (t) => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
   // day palette — "soft light" (Ernest-approved): TRUE #ffffff base plate, whisper-grey
   // walkways, lighter vacants; saturation lives in the tenant blocks + route only
-  const DAY = { bg: 0xeef2f8, grd: 0xffffff, hg: 0xb9c3d2, hi: .6, si: 1.15, lane: 0xe8edf4, svc: 0xd4dce7, vac: 0xc6cfdc, out: 0xbeb4a3, shOp: .2 };
+  const DAY = { bg: 0xeef2f8, grd: 0xffffff, hg: 0xb9c3d2, hi: .6, si: 1.15, lane: 0xe8edf4, svc: 0xe3e8f0, vac: 0xdfe5ee, out: 0xd7d0c4, shOp: .2 };
   const NIGHT = { bg: 0x0b0f16, grd: 0x0f131b, hg: 0x1f2630, hi: .45, si: .9, lane: 0x5b6470, svc: 0x2a323e, vac: 0x39424f, out: 0x33302b, shOp: .3 };
   const isOutdoor = (key) => key === "loadingBay" || key === "carPark";
 
@@ -91,7 +91,12 @@ const MapKiosk = (function () {
     camera = new THREE.PerspectiveCamera(42, 1, 1, 8000);
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true; controls.dampingFactor = .09;
-    controls.enablePan = false; controls.minDistance = 500; controls.maxDistance = 2400;
+    // map-app gestures: drag = pan, scroll/pinch = zoom (fast), two-finger twist / right-drag = rotate
+    controls.enablePan = true; controls.screenSpacePanning = false;
+    controls.zoomSpeed = 2;
+    controls.minDistance = 420; controls.maxDistance = 2600;
+    controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+    controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
     controls.maxPolarAngle = Math.PI * 0.49;
 
     hemi = new THREE.HemisphereLight(0xffffff, 0xb9c3d2, .6); scene.add(hemi);
@@ -224,9 +229,10 @@ const MapKiosk = (function () {
 
   /* ---- camera framing ---- */
   function flyTo(pos, tgt, ms) { tween = { p0: camera.position.clone(), p1: pos, t0: controls.target.clone(), t1: tgt, s: performance.now(), ms: ms || 950 }; }
+  const OFFX = 135;   // centre the plan in the VISIBLE area (the browse rail covers the right edge)
   function homeView(anim) {
-    const pos = state.view === "2d" ? new THREE.Vector3(0, 1500, 1) : new THREE.Vector3(30, 560, 880);
-    const tgt = new THREE.Vector3(0, 0, 30);
+    const pos = state.view === "2d" ? new THREE.Vector3(OFFX, 1500, 1) : new THREE.Vector3(30 + OFFX, 640, 1005);
+    const tgt = new THREE.Vector3(OFFX, 0, 30);
     if (anim) flyTo(pos, tgt); else { camera.position.copy(pos); controls.target.copy(tgt); }
   }
   function focusRoute(id) {
@@ -236,7 +242,7 @@ const MapKiosk = (function () {
     const mid = b.mesh.position.clone().setY(0).add(k).multiplyScalar(.5);
     const span = b.mesh.position.distanceTo(k);
     const h = Math.max(980, span * 1.25 + 240);
-    flyTo(new THREE.Vector3(mid.x, h, mid.z + 1), mid.clone().setY(0), 1050);
+    flyTo(new THREE.Vector3(mid.x + OFFX, h, mid.z + 1), new THREE.Vector3(mid.x + OFFX, 0, mid.z), 1050);
   }
 
   /* ---- route tube along the corridor ---- */
@@ -301,6 +307,9 @@ const MapKiosk = (function () {
   function loop() {
     raf = requestAnimationFrame(loop);
     const mainOn = (document.getElementById("main") || {}).classList && document.getElementById("main").classList.contains("active");
+    // back on the attract loop → park the camera at home so the next customer starts fresh
+    if (!mainOn && !parked) { tween = null; homeView(false); parked = true; }
+    else if (mainOn) parked = false;
     controls.update();
     const now = performance.now();
     for (const id in blocks) { const b = blocks[id]; if (b.lift) { const k = Math.min(1, (now - b.lift.s) / 260); b.mesh.position.y = b.lift.from + (b.lift.to - b.lift.from) * easeIO(k); if (k >= 1) b.lift = null; } }

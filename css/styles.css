@@ -32,7 +32,7 @@
   --float: rgba(255,255,255,.84); --float-brd: rgba(255,255,255,.92);
   --teal: #0fae84; --shadow: 0 18px 44px -16px rgba(28,45,80,.28);
   --map-bg: #ffffff; --map-line: #ccd5e2; --map-lane: #e8edf4;
-  --map-room: #d4dce7; --map-room-line: #c6d0dd;
+  --map-room: #e3e8f0; --map-room-line: #d5dde8;
   --map-unit: #ffffff; --map-unit-line: #d6deea;
   --map-label: #4a5568; --map-room-label: #8a93a4; --route-bg: #ffffff;
   --bg-grad: radial-gradient(120% 70% at 82% 4%, rgba(230,155,58,.16), transparent 58%),

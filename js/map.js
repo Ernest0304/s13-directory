@@ -149,7 +149,7 @@ const MapKiosk = (function () {
     const floorStroke = bright ? "#dfe5ee" : "rgba(255,255,255,.06)";
     const laneFill = bright ? "#e8edf4" : "#626c78";
     const laneStroke = bright ? "#bcc7d6" : "#717c89";
-    const roomFill = bright ? "#d4dce7" : "#283341";
+    const roomFill = bright ? "#e3e8f0" : "#283341";
     const doorCol = bright ? "#48526a" : "#cdd5e0";
     const brand = selOcc ? selK.color : "#8A93A4";
     const qp = (x, y, w, h, z) => `${ps(pj(x, y, z, C))} ${ps(pj(x + w, y, z, C))} ${ps(pj(x + w, y + h, z, C))} ${ps(pj(x, y + h, z, C))}`;
@@ -168,7 +168,7 @@ const MapKiosk = (function () {
     for (const [uid, u] of entries) {
       _bi++;
       const kk = kitchenOf(uid), isSel = uid === id, occ = kk.occupied;
-      const col = occ ? kk.color : (bright ? "#c6cfdc" : "#3a414e");
+      const col = occ ? kk.color : (bright ? "#dfe5ee" : "#3a414e");
       const base = isSel ? col : mixc(col, neutral, bright ? 0.10 : 0.20);
       const top = isSel ? lighten(col, 0.16) : base;
       const zTop = isSel ? BH * 1.35 : BH;
