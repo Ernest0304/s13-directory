@@ -95,7 +95,10 @@ const MapKiosk = (function () {
     controls.zoomSpeed = 2;
     controls.minDistance = 420; controls.maxDistance = 2600;
     controls.maxPolarAngle = Math.PI * 0.49;
-    applyGestures();
+    // free orbit EVERYWHERE — browse and after selecting (the lab-page feel Ernest wants):
+    // drag = spin/tilt the board, right-drag / two-finger = move, scroll / pinch = zoom
+    controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+    controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
 
     hemi = new THREE.HemisphereLight(0xffffff, 0xb9c3d2, .6); scene.add(hemi);
     sun = new THREE.DirectionalLight(0xfff2df, 1.15); sun.position.set(540, 980, 380);
@@ -271,26 +274,10 @@ const MapKiosk = (function () {
     endObj.position.copy(end).setY(10); endObj.visible = false; scene.add(endObj);
   }
 
-  /* ---- gestures follow the camera context ----
-   * browse (angled 3D): drag SPINS the floating slab, like it always did;
-   * top-down (kitchen selected / 2D view): drag PANS the map like a map app.
-   * Zoom is always scroll / pinch; the other action sits on right-drag / two fingers. */
-  function applyGestures() {
-    const topdown = state.view === "2d" || !!(state.id && (kitchenOf(state.id) || {}).occupied);
-    if (topdown) {
-      controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
-      controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
-    } else {
-      controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
-      controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
-    }
-  }
-
   /* ---- apply board state to the scene ---- */
   function apply(id, lang, theme, view) {
     const langChanged = lang !== state.lang, themeChanged = theme !== state.theme, viewChanged = view !== state.view, idChanged = id !== state.id;
     state = { id, lang, theme, view };
-    applyGestures();
     if (themeChanged) applyTheme(theme === "bright" ? DAY : NIGHT);
     // labels (content depends on lang)
     for (const bid in blocks) blocks[bid].labelEl.innerHTML = blockLabelHTML(bid);
