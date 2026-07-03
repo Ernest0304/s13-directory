@@ -33,6 +33,8 @@
     [data-theme="bright"] .m3-svc.out { color: #a89a80; }
     [data-theme="bright"] .m3-lab.vac .m3-code, [data-theme="bright"] .m3-lab.vac .m3-av { color: #6b7789; text-shadow: none; }
     .m3-here { color: #0fae84; font-weight: 800; font-size: 12px; letter-spacing: .04em; text-shadow: 0 2px 8px rgba(255,255,255,.7); }
+    /* 2D + night mode removed on the final 3D board (containers kept for app.js wiring) */
+    #viewToggle, #themeToggle { display: none; }
     /* small preview tag */
     #d3tag { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 60;
       background: rgba(20,24,33,.72); color: #fff; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 999px;
@@ -99,6 +101,16 @@
   <script src="js/config.js"></script>
   <script src="js/data.js?v=19"></script>
   <script src="js/db.js?v=2"></script>
+  <script>
+    // 2D view + night mode are removed on this board: pin day theme + 3D view,
+    // overriding any admin defaults (wrapped before app.js consumes loadContent)
+    const __loadContent = loadContent;
+    loadContent = async function () {
+      const r = await __loadContent();
+      if (SETTINGS) { SETTINGS.defaultTheme = "bright"; SETTINGS.defaultView = "3d"; }
+      return r;
+    };
+  </script>
   <script src="js/map3d.js?v=11"></script>
   <script src="js/app.js?v=12"></script>
 </body>
