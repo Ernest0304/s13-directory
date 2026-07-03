@@ -150,6 +150,28 @@ const MapKiosk = (function () {
       g.position.set(wx(cx), 0, wz(cy)); g.rotation.y = -a1; scene.add(g);
     }
 
+    // scenery: a lorry at the loading bay + a car on the car park
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x2b2f36, roughness: .9 });
+    const mkWheel = (r, w) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, w, 18), wheelMat); m.rotation.z = Math.PI / 2; m.castShadow = true; return m; };
+    const lorry = new THREE.Group();
+    const cargo = new THREE.Mesh(new RoundedBoxGeometry(44, 44, 92, 2, 4), new THREE.MeshStandardMaterial({ color: 0xf4f6f9, roughness: .55 }));
+    cargo.position.set(0, 32, -16); cargo.castShadow = true;
+    const cab = new THREE.Mesh(new RoundedBoxGeometry(40, 26, 22, 2, 5), new THREE.MeshStandardMaterial({ color: 0x5f7d99, roughness: .45, metalness: .15 }));
+    cab.position.set(0, 16, 44); cab.castShadow = true;
+    lorry.add(cargo, cab);
+    for (const [lx, lz] of [[-20, 42], [20, 42], [-20, -24], [20, -24], [-20, -50], [20, -50]]) { const w = mkWheel(7, 6); w.position.set(lx, 7, lz); lorry.add(w); }
+    lorry.position.set(wx(866), 3, wz(648));
+    scene.add(lorry);
+    const car = new THREE.Group();
+    const carBody = new THREE.Mesh(new RoundedBoxGeometry(26, 11, 50, 2, 4), new THREE.MeshStandardMaterial({ color: 0x8fa3b8, roughness: .4, metalness: .2 }));
+    carBody.position.set(0, 10, 0); carBody.castShadow = true;
+    const carCabin = new THREE.Mesh(new RoundedBoxGeometry(22, 9, 24, 2, 5), new THREE.MeshStandardMaterial({ color: 0xd9e3ed, roughness: .25, metalness: .1 }));
+    carCabin.position.set(0, 19, -3); carCabin.castShadow = true;
+    car.add(carBody, carCabin);
+    for (const [cx2, cz2] of [[-13.5, 16], [13.5, 16], [-13.5, -16], [13.5, -16]]) { const w = mkWheel(5.5, 5); w.position.set(cx2, 5.5, cz2); car.add(w); }
+    car.position.set(wx(1017), 3, wz(694)); car.rotation.y = 0.24;
+    scene.add(car);
+
     // kitchen blocks
     for (const [id, u] of Object.entries(FP.units)) {
       const kk = kitchenOf(id), occ = !!(kk && kk.occupied);
