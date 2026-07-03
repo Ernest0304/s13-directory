@@ -149,6 +149,7 @@ const FLOORPLAN = {
     { x: 678, y: 118, w: 22, rot: 90 },      // back door inside the K-09/K-10 walkway
     { x: 706, y: 612, w: 44, rot: 90 },      // K1 & 2 entrance (on the walkway beside K-01, mid-height)
     { x: 342, y: 492, w: 36, rot: 180 },     // door on the lower corridor separating the main kitchens from the K-01/K-02 zone
+    { x: 996, y: 505, w: 42, rot: 90 },      // lobby door on the entrance spur, just above the "you are here" kiosk
   ],
 
   // the entrance lobby (open area on the right where the kiosk stands)
