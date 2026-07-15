@@ -2,9 +2,9 @@
  * data.js — PUBLIC SHOWCASE build. Standalone, no backend.
  *
  * All 12 tenants below are FICTIONAL placeholder brands, invented purely to
- * demonstrate the board. They are not real Smart City Kitchens licensees and
- * carry no real logos — the map draws emoji marks instead. There is no admin,
- * no database, and no connection to any live system in this build.
+ * demonstrate the board. They are not real Smart City Kitchens licensees; their
+ * logos are generated placeholder SVGs (img/logos/), not real tenant marks.
+ * There is no admin, no database, and no connection to any live system here.
  * ========================================================================== */
 
 const FACILITY = {
@@ -44,29 +44,29 @@ const I18N = {
 
 /* ---- FICTIONAL tenants — invented brands, for demonstration only ---------- */
 const SEED_UNITS = [
-  { id: "K01", unit: "K-01", color: "#C76B98", icon: "🧁", cat: "sweets",  hours: { open: "12:00", close: "23:00" },
+  { id: "K01", unit: "K-01", logo: "img/logos/k01.svg", color: "#C76B98", icon: "🧁", cat: "sweets",  hours: { open: "12:00", close: "23:00" },
     name: { en: "Sugar Lab", zh: "糖实验室" }, cuisine: { en: "Desserts & Bakes", zh: "甜品烘焙" }, tagline: { en: "Always save room", zh: "永远留点胃口" } },
-  { id: "K02", unit: "K-02", color: "#3BA776", icon: "🥗", cat: "healthy", hours: { open: "10:00", close: "21:00" },
+  { id: "K02", unit: "K-02", logo: "img/logos/k02.svg", color: "#3BA776", icon: "🥗", cat: "healthy", hours: { open: "10:00", close: "21:00" },
     name: { en: "Leaf & Ladle", zh: "叶与勺" }, cuisine: { en: "Salads & Grain Bowls", zh: "沙拉谷物碗" }, tagline: { en: "Eat the rainbow", zh: "缤纷蔬食" } },
-  { id: "K03", unit: "K-03", color: "#E4572E", icon: "🍔", cat: "western", hours: { open: "11:00", close: "22:00" },
+  { id: "K03", unit: "K-03", logo: "img/logos/k03.svg", color: "#E4572E", icon: "🍔", cat: "western", hours: { open: "11:00", close: "22:00" },
     name: { en: "Patty Parade", zh: "汉堡巡游" }, cuisine: { en: "Smash Burgers", zh: "现煎汉堡" }, tagline: { en: "Always double stacked", zh: "双层管饱" } },
-  { id: "K04", unit: "K-04", color: "#C1440E", icon: "🍕", cat: "western", hours: { open: "11:00", close: "22:30" },
+  { id: "K04", unit: "K-04", logo: "img/logos/k04.svg", color: "#C1440E", icon: "🍕", cat: "western", hours: { open: "11:00", close: "22:30" },
     name: { en: "Slice Theory", zh: "切片理论" }, cuisine: { en: "Wood-fired Pizza", zh: "柴火披萨" }, tagline: { en: "Blistered in 90 seconds", zh: "九十秒出炉" } },
-  { id: "K05", unit: "K-05", color: "#E6A700", icon: "🍗", cat: "western", hours: { open: "11:00", close: "22:00" },
+  { id: "K05", unit: "K-05", logo: "img/logos/k05.svg", color: "#E6A700", icon: "🍗", cat: "western", hours: { open: "11:00", close: "22:00" },
     name: { en: "Cluckwork", zh: "咔嚓炸鸡" }, cuisine: { en: "Fried Chicken", zh: "炸鸡" }, tagline: { en: "Crunch you can hear", zh: "听得见的酥脆" } },
-  { id: "K06", unit: "K-06", color: "#B23A48", icon: "🔥", cat: "western", hours: { open: "11:00", close: "22:00" },
+  { id: "K06", unit: "K-06", logo: "img/logos/k06.svg", color: "#B23A48", icon: "🔥", cat: "western", hours: { open: "11:00", close: "22:00" },
     name: { en: "Char & Barrel", zh: "炭与桶" }, cuisine: { en: "American BBQ", zh: "美式烧烤" }, tagline: { en: "Low and slow, all day", zh: "慢火细烤，全天供应" } },
-  { id: "K07", unit: "K-07", color: "#D7263D", icon: "🍛", cat: "world",   hours: { open: "11:00", close: "22:00" },
+  { id: "K07", unit: "K-07", logo: "img/logos/k07.svg", color: "#D7263D", icon: "🍛", cat: "world",   hours: { open: "11:00", close: "22:00" },
     name: { en: "Masala Junction", zh: "香料交汇" }, cuisine: { en: "North Indian", zh: "印度菜" }, tagline: { en: "Spice, made to order", zh: "现做香料咖喱" } },
-  { id: "K08", unit: "K-08", color: "#F2A900", icon: "🍜", cat: "asian",   hours: { open: "10:00", close: "21:30" },
+  { id: "K08", unit: "K-08", logo: "img/logos/k08.svg", color: "#F2A900", icon: "🍜", cat: "asian",   hours: { open: "10:00", close: "21:30" },
     name: { en: "Slurp Society", zh: "嗦面社" }, cuisine: { en: "Asian Noodles", zh: "亚洲面食" }, tagline: { en: "Hand-pulled, served hot", zh: "手工拉面，热气腾腾" } },
-  { id: "K09", unit: "K-09", color: "#E08D2F", icon: "🌮", cat: "world",   hours: { open: "11:00", close: "22:00" },
+  { id: "K09", unit: "K-09", logo: "img/logos/k09.svg", color: "#E08D2F", icon: "🌮", cat: "world",   hours: { open: "11:00", close: "22:00" },
     name: { en: "Taco Tectonic", zh: "塔可板块" }, cuisine: { en: "Mexican Street Food", zh: "墨西哥街头菜" }, tagline: { en: "Street tacos, no passport", zh: "街头塔可，无需护照" } },
-  { id: "K10", unit: "K-10", color: "#2E86AB", icon: "🍣", cat: "asian",   hours: { open: "11:30", close: "21:30" },
+  { id: "K10", unit: "K-10", logo: "img/logos/k10.svg", color: "#2E86AB", icon: "🍣", cat: "asian",   hours: { open: "11:30", close: "21:30" },
     name: { en: "Sushi Circuit", zh: "寿司环线" }, cuisine: { en: "Japanese", zh: "日本料理" }, tagline: { en: "Rolled to order", zh: "现卷现做" } },
-  { id: "K11", unit: "K-11", color: "#C0392B", icon: "🥢", cat: "asian",   hours: { open: "11:00", close: "22:00" },
+  { id: "K11", unit: "K-11", logo: "img/logos/k11.svg", color: "#C0392B", icon: "🥢", cat: "asian",   hours: { open: "11:00", close: "22:00" },
     name: { en: "Wok Star", zh: "镬气之星" }, cuisine: { en: "Chinese Stir-fry", zh: "中式小炒" }, tagline: { en: "Breath of the wok", zh: "十足镬气" } },
-  { id: "K12", unit: "K-12", color: "#8C6A4A", icon: "☕", cat: "sweets",  hours: { open: "07:30", close: "19:00" },
+  { id: "K12", unit: "K-12", logo: "img/logos/k12.svg", color: "#8C6A4A", icon: "☕", cat: "sweets",  hours: { open: "07:30", close: "19:00" },
     name: { en: "Bean Machine", zh: "豆子机器" }, cuisine: { en: "Coffee & Brunch", zh: "咖啡早午餐" }, tagline: { en: "Your morning, sorted", zh: "开启美好早晨" } },
 ];
 
