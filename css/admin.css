@@ -94,3 +94,9 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font); -webk
 .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px); opacity: 0; pointer-events: none; background: #11203a; color: #fff; font-weight: 700; padding: 13px 22px; border-radius: 999px; box-shadow: var(--shadow); transition: opacity .25s, transform .25s; z-index: 50; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.bad { background: var(--red); }
+
+/* upload row: file picker + a Remove button that only shows when an image is set */
+.up-row { display: flex; align-items: center; gap: 10px; }
+.up-row input[type=file] { flex: 1; min-width: 0; }
+.btn.sm { padding: 7px 14px; font-size: 13px; border-radius: 9px; }
+.btn.ghost.sm:hover { border-color: #d38b8b; color: #b3413f; }

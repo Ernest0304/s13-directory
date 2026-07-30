@@ -78,8 +78,8 @@
         <label>Hours<span class="hoursrow"><input type="time" id="f_open" value="${esc(u.hours.open)}"/><span>–</span><input type="time" id="f_close" value="${esc(u.hours.close)}"/></span></label>
       </div>
       <div class="grid2">
-        <div class="upload"><div class="up-label">Logo <span class="hint">Square PNG · transparent background · ~512×512 px</span></div><div class="preview logo" id="pv_logo">${imgPrev(u.logo)}</div><input type="file" id="f_logo" accept="image/*"/></div>
-        <div class="upload"><div class="up-label">Ad background <span class="hint">Landscape JPG/PNG · ~1600×1000 px · leave empty to auto-match the logo colour</span></div><div class="preview wide" id="pv_bg">${imgPrev(u.adBg)}</div><input type="file" id="f_bg" accept="image/*"/></div>
+        <div class="upload"><div class="up-label">Logo <span class="hint">Square PNG · transparent background · ~512×512 px</span></div><div class="preview logo" id="pv_logo">${imgPrev(u.logo)}</div><div class="up-row"><input type="file" id="f_logo" accept="image/*"/><button type="button" class="btn ghost sm" id="rm_logo" ${u.logo ? "" : "hidden"}>Remove</button></div></div>
+        <div class="upload"><div class="up-label">Ad background <span class="hint">Landscape JPG/PNG · ~1600×1000 px · leave empty to auto-match the logo colour</span></div><div class="preview wide" id="pv_bg">${imgPrev(u.adBg)}</div><div class="up-row"><input type="file" id="f_bg" accept="image/*"/><button type="button" class="btn ghost sm" id="rm_bg" ${u.adBg ? "" : "hidden"}>Remove</button></div></div>
       </div>
       <div class="form-foot"><button class="btn" id="saveBtn">Save changes</button></div>`;
   }
@@ -87,12 +87,28 @@
   function wireForm(u) {
     $("f_color").addEventListener("input", (e) => { $("f_color_t").value = e.target.value; });
     $("f_color_t").addEventListener("input", (e) => { if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) $("f_color").value = e.target.value; });
-    $("f_logo").addEventListener("change", (e) => handleUpload(e, u, "logo", "pv_logo"));
-    $("f_bg").addEventListener("change", (e) => handleUpload(e, u, "adBg", "pv_bg"));
+    $("f_logo").addEventListener("change", (e) => handleUpload(e, u, "logo", "pv_logo", "rm_logo"));
+    $("f_bg").addEventListener("change", (e) => handleUpload(e, u, "adBg", "pv_bg", "rm_bg"));
+    $("rm_logo").addEventListener("click", () => removeAsset(u, "logo", "pv_logo", "rm_logo", "f_logo"));
+    $("rm_bg").addEventListener("click", () => removeAsset(u, "adBg", "pv_bg", "rm_bg", "f_bg"));
     $("saveBtn").addEventListener("click", () => saveUnit(u));
   }
 
-  async function handleUpload(e, u, field, pvId) {
+  /* clear a logo / ad background back to none (the map falls back to the emoji
+     icon, the ad slide to the auto colour). Takes effect on Save. */
+  function removeAsset(u, field, pvId, rmId, fileId) {
+    u[field] = null;
+    const pv = $(pvId);
+    pv.replaceChildren();
+    const s = document.createElement("span");
+    s.className = "noimg"; s.textContent = "none";
+    pv.appendChild(s);
+    $(rmId).hidden = true;
+    $(fileId).value = "";                      // let the same file be re-picked later
+    toast(field === "logo" ? "Logo removed — remember to Save" : "Background removed — remember to Save");
+  }
+
+  async function handleUpload(e, u, field, pvId, rmId) {
     const file = e.target.files[0]; if (!file) return;
     const pv = $(pvId); pv.innerHTML = `<span class="noimg">uploading…</span>`;
     try {
@@ -103,6 +119,7 @@
       const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "");
       const url = await adminUploadAsset(file, `${u.unit}/${field}-${Date.now()}.${ext}`);
       u[field] = url; pv.innerHTML = imgPrev(url);
+      if (rmId && $(rmId)) $(rmId).hidden = false;      // an image exists now — offer Remove
       toast(field === "logo" ? "Logo uploaded — accent set to match. Save to apply." : "Background uploaded — remember to Save");
     } catch (err) { pv.innerHTML = imgPrev(u[field]); toast(err.message, false); }
   }
