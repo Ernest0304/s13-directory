@@ -35,6 +35,25 @@
     .m3-here { color: #0fae84; font-weight: 800; font-size: 12px; letter-spacing: .04em; text-shadow: 0 2px 8px rgba(255,255,255,.7); }
     /* 2D + night mode removed on the final 3D board (containers kept for app.js wiring) */
     #viewToggle, #themeToggle { display: none; }
+
+    /* ---- collapsible directory rail (users reported it covering K-11/K-12) ---- */
+    .main-a .browse-float { transition: transform .42s cubic-bezier(.22,.61,.36,1), opacity .3s ease; }
+    .kiosk.rail-hidden .browse-float { transform: translateX(calc(100% + clamp(14px,1.6vw,30px))); opacity: 0; pointer-events: none; }
+    .kiosk.rail-hidden .main-a .map { padding-right: clamp(8px,1.4vh,20px); }   /* map reclaims the full width */
+    .kiosk.rail-hidden .facility-foot { max-width: calc(100% - clamp(30px,4vw,70px)); }
+
+    .rail-toggle { position: absolute; z-index: 30; top: 50%; transform: translateY(-50%);
+      right: calc(clamp(278px,28vw,440px) + clamp(20px,2.2vw,40px));
+      display: flex; align-items: center; gap: 7px; cursor: pointer; font: inherit;
+      font-size: clamp(12px,1.05vw,15px); font-weight: 700; color: var(--ink);
+      background: var(--float); border: 1px solid var(--float-brd); box-shadow: var(--shadow);
+      -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3);
+      border-radius: 999px; padding: clamp(9px,1vh,13px) clamp(13px,1.2vw,18px);
+      transition: right .42s cubic-bezier(.22,.61,.36,1), background .2s; }
+    .rail-toggle:active { background: var(--glass-2); }
+    .rail-toggle .rt-ico { font-size: 1.25em; line-height: 1; transition: transform .42s cubic-bezier(.22,.61,.36,1); }
+    .kiosk.rail-hidden .rail-toggle { right: clamp(14px,1.6vw,30px); }
+    .kiosk.rail-hidden .rail-toggle .rt-ico { transform: rotate(180deg); }
     /* small preview tag */
     #d3tag { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 60;
       background: rgba(20,24,33,.72); color: #fff; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 999px;
@@ -86,11 +105,13 @@
         <button class="home-btn" id="homeBtn">⟲ <span data-i18n="startOver">Start Over</span></button>
       </header>
 
-      <aside class="browse-float">
+      <aside class="browse-float" id="browseRail">
         <div class="filters" id="filters"></div>
         <div class="info-panel" id="infoPanel"></div>
         <div class="shoprow" id="shoprow"></div>
       </aside>
+      <button class="rail-toggle" id="railToggle" aria-controls="browseRail" aria-expanded="true"
+              title="Hide the directory to see the whole map"><span class="rt-ico">›</span><span class="rt-txt" data-i18n-rail>Hide list</span></button>
 
       <footer class="facility-foot" id="facilityFoot"></footer>
     </section>
@@ -111,7 +132,34 @@
       return r;
     };
   </script>
-  <script src="js/map3d.js?v=11"></script>
+  <script src="js/map3d.js?v=12"></script>
   <script src="js/app.js?v=12"></script>
+  <script>
+    // Collapsible directory rail — visitors reported it covering the right-hand
+    // kitchens (K-11/K-12). Hiding it hands the full width back to the map and
+    // tells map3d to re-frame (it normally offsets right to clear the rail).
+    (function () {
+      var kiosk = document.getElementById("kiosk"), btn = document.getElementById("railToggle");
+      var TXT = { en: { hide: "Hide list", show: "Show list" }, zh: { hide: "隐藏列表", show: "显示列表" } };
+      function label() {
+        var lang = document.documentElement.lang === "zh" ? "zh" : "en";
+        var hidden = kiosk.classList.contains("rail-hidden");
+        btn.querySelector(".rt-txt").textContent = TXT[lang][hidden ? "show" : "hide"];
+        btn.setAttribute("aria-expanded", hidden ? "false" : "true");
+      }
+      function setRail(hidden) {
+        kiosk.classList.toggle("rail-hidden", hidden);
+        label();
+        // MapKiosk is a top-level `const` (not on window) — reference it directly
+        if (typeof MapKiosk !== "undefined" && MapKiosk.setRailHidden) MapKiosk.setRailHidden(hidden);
+      }
+      btn.addEventListener("click", function (e) { e.stopPropagation(); setRail(!kiosk.classList.contains("rail-hidden")); });
+      // keep the label in sync with the EN/中 toggle, and always start a new visitor with the list showing
+      document.getElementById("langToggle").addEventListener("click", function () { setTimeout(label, 60); });
+      document.getElementById("attract").addEventListener("click", function () { setRail(false); });
+      document.getElementById("homeBtn").addEventListener("click", function () { setRail(false); });
+      label();
+    })();
+  </script>
 </body>
 </html>

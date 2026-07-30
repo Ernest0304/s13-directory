@@ -252,8 +252,19 @@ const MapKiosk = (function () {
 
   /* ---- camera framing ---- */
   function flyTo(pos, tgt, ms) { tween = { p0: camera.position.clone(), p1: pos, t0: controls.target.clone(), t1: tgt, s: performance.now(), ms: ms || 950 }; }
-  const OFFX = 135;   // centre the plan in the VISIBLE area (the browse rail covers the right edge)
+  /* Shift the plan right so the browse rail doesn't crowd it — but when the rail
+   * is collapsed the map owns the full width, so the offset drops to 0. */
+  const RAIL_OFFX = 135;
+  let railHidden = false;
+  const offx = () => (railHidden ? 0 : RAIL_OFFX);
+  function setRailHidden(hidden) {
+    if (!ready || hidden === railHidden) return;
+    railHidden = !!hidden;
+    resize();
+    if (state.id && (kitchenOf(state.id) || {}).occupied) focusRoute(state.id); else homeView(true);
+  }
   function homeView(anim) {
+    const OFFX = offx();
     const pos = state.view === "2d" ? new THREE.Vector3(OFFX, 1500, 1) : new THREE.Vector3(30 + OFFX, 640, 1005);
     const tgt = new THREE.Vector3(OFFX, 0, 30);
     if (anim) flyTo(pos, tgt); else { camera.position.copy(pos); controls.target.copy(tgt); }
@@ -265,6 +276,7 @@ const MapKiosk = (function () {
     const mid = b.mesh.position.clone().setY(0).add(k).multiplyScalar(.5);
     const span = b.mesh.position.distanceTo(k);
     const h = Math.max(980, span * 1.25 + 240);
+    const OFFX = offx();
     flyTo(new THREE.Vector3(mid.x + OFFX, h, mid.z + 1), new THREE.Vector3(mid.x + OFFX, 0, mid.z), 1050);
   }
 
@@ -358,5 +370,5 @@ const MapKiosk = (function () {
     if (container !== cont) { cont = container; resize(); }
     apply(id, lang, theme, view);
   }
-  return { render, directions };
+  return { render, directions, setRailHidden };
 })();
