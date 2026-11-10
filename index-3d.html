@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>KitchenBASE · S13 Kitchen Directory — 3D</title>
   <link rel="icon" type="image/png" href="img/icon-192.png" />
-  <link rel="stylesheet" href="css/styles.css?v=24" />
+  <link rel="stylesheet" href="css/styles.css?v=25" />
   <!-- Three.js r160 is bundled in vendor/three/ (no CDN): map3d.js's dynamic imports resolve here -->
   <script type="importmap">
   { "imports": {
@@ -104,8 +104,8 @@
         <button data-view="2d" aria-label="2D view">2D</button>
       </div>
       <div class="seg" id="langToggle" role="group" aria-label="Language">
-        <button data-lang="en" class="active" aria-label="English">EN</button>
-        <button data-lang="zh" aria-label="中文">中</button>
+        <button data-lang="en" class="active" aria-label="English">English</button>
+        <button data-lang="zh" aria-label="中文">中文</button>
       </div>
       <div class="seg" id="themeToggle" role="group" aria-label="Theme">
         <button data-theme="bright" class="active" aria-label="Day theme">☀</button>
@@ -144,6 +144,7 @@
         <div class="filters" id="filters"></div>
         <div class="info-panel" id="infoPanel"></div>
         <div class="shoprow" id="shoprow"></div>
+        <button class="list-more" id="listMore" type="button"></button>
       </aside>
       <button class="rail-toggle" id="railToggle" aria-controls="browseRail" aria-expanded="true"
               title="Hide the directory to see the whole map">
@@ -161,12 +162,13 @@
       </div>
 
       <footer class="facility-foot" id="facilityFoot"></footer>
+      <div class="idle-warn" id="idleWarn" role="status" aria-live="polite"></div>
     </section>
 
   </div>
 
   <script src="js/config.js"></script>
-  <script src="js/data.js?v=22"></script>
+  <script src="js/data.js?v=23"></script>
   <script src="js/db.js?v=3"></script>
   <script>
     // 2D view + night mode are removed on this board: pin day theme + 3D view,
@@ -178,8 +180,8 @@
       return r;
     };
   </script>
-  <script src="js/map3d.js?v=15"></script>
-  <script src="js/app.js?v=13"></script>
+  <script src="js/map3d.js?v=16"></script>
+  <script src="js/app.js?v=14"></script>
   <script>
     // Collapsible directory rail — visitors reported it covering the right-hand
     // kitchens (K-11/K-12). Hiding it hands the full width back to the map and

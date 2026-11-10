@@ -80,7 +80,10 @@
     document.querySelectorAll("[data-i18n-brand]").forEach((el) => { el.textContent = name; });
     if (s.subtitle) document.querySelectorAll('[data-i18n="directory"]').forEach((el) => { el.textContent = s.subtitle[lang]; });
     if (s.ctaMain)  document.querySelectorAll('[data-i18n="touchToBegin"]').forEach((el) => { el.textContent = s.ctaMain[lang]; });
-    if (s.ctaSub)   document.querySelectorAll('[data-i18n="tapAnywhere"]').forEach((el) => { el.textContent = s.ctaSub[lang]; });
+    // the sub-line under the call to action invites in the other language, so a reader of either
+    // language sees at a glance that the board speaks it
+    const other = lang === "zh" ? "en" : "zh";
+    document.querySelectorAll('[data-i18n="tapAnywhere"]').forEach((el) => { el.textContent = ((s.ctaMain && s.ctaMain[other]) || I18N.touchToBegin[other]); });
   }
 
   /* ---------- screens ---------- */
@@ -127,7 +130,7 @@
         <div class="medallion" style="background:${k.logo ? "#ffffff" : `radial-gradient(120% 120% at 32% 22%, ${mix(k.color, "#ffffff", 0.12)}, ${mix(k.color, "#0a0b10", 0.5)})`}">${mark(k)}</div>
         <h2>${esc(nameOf(k))}</h2>
         ${cuisine ? `<div class="cuisine">${esc(cuisine)}</div>` : ""}
-        <div class="tag">${tag ? (lang === "zh" ? "「" + esc(tag) + "」" : "“" + esc(tag) + "”") : ""}</div>
+        <div class="tag">${tag ? "“" + esc(tag) + "”" : ""}</div>
         <div class="utag">${esc(k.unit)}</div>
       </div>`;
     }).join("");
@@ -198,6 +201,28 @@
       : `<div class="info-empty" style="margin:auto"><div class="t2">${I18N.noneInCat[lang]}</div>${filterCat !== "all" ? `<button class="chip show-all">${I18N.showAll[lang]}</button>` : ""}</div>`;
     row.querySelectorAll(".shopcard").forEach((c) => c.addEventListener("click", () => selectShop(c.dataset.id)));
     const all = row.querySelector(".show-all"); if (all) all.addEventListener("click", () => setFilter("all"));
+    updateMore();
+  }
+
+  /* ---------- the list says when kitchens are hidden below, and keeps the chosen one in view ---------- */
+  function updateMore() {
+    const row = document.getElementById("shoprow"), more = document.getElementById("listMore"); if (!row || !more) return;
+    const bottom = row.getBoundingClientRect().bottom;
+    const hidden = [...row.querySelectorAll(".shopcard")].filter((c) => c.getBoundingClientRect().bottom > bottom + 4).length;
+    more.classList.toggle("show", hidden > 0);
+    more.textContent = "↓ " + I18N.moreRows[lang].replace("{n}", hidden);
+  }
+  function keepChosenInView() {
+    requestAnimationFrame(() => {
+      updateMore();                         // the strip may shorten the list: settle it before measuring
+      const row = document.getElementById("shoprow"), c = row && row.querySelector(".shopcard.sel");
+      if (c) {
+        const cr = c.getBoundingClientRect(), rr = row.getBoundingClientRect();
+        if (cr.top < rr.top) row.scrollTop -= rr.top - cr.top + 4;
+        else if (cr.bottom > rr.bottom) row.scrollTop += cr.bottom - rr.bottom + 4;
+      }
+      updateMore();
+    });
   }
 
   /* ---------- info panel ---------- */
@@ -212,7 +237,7 @@
     if (!k.occupied && !comingSoon(k)) {
       panel.style.setProperty("--c", "#8A93A4");
       panel.innerHTML = `<div class="info-sel">
-        <div class="top"><span class="disc">＋</span><div><div class="nm">${I18N.available[lang]}</div><div class="cz">${I18N.availableTag[lang]} · ${esc(k.unit)}</div></div></div>
+        <div class="top"><span class="disc">＋</span><div><div class="nm">${I18N.availableTag[lang]}</div><div class="cz">${esc(k.unit)}</div></div></div>
         <div class="dirbox"><span class="pin">🏷️</span><span>${I18N.leaseEnquiry[lang]}</span></div>
       </div>`;
       return;
@@ -226,7 +251,7 @@
       <div class="top"><span class="disc${k.logo ? " has-logo" : ""}">${mark(k)}</span><div><div class="nm">${esc(nameOf(k))}</div>${cuisine ? `<div class="cz">${esc(cuisine)}</div>` : ""}</div></div>
       <div class="unit-big"><span class="lbl">${I18N.unit[lang]}</span><span class="val">${esc(k.unit)}</span></div>
       ${meta ? `<div class="meta-row">${meta}</div>` : ""}
-      <div class="dirbox"><span class="pin">📍</span><span>${esc(MapKiosk.directions(currentId, lang))}</span></div>
+      <div class="dirbox"><span class="pin">📍</span><span>${esc(MapKiosk.directions(currentId, lang)).replace(/K-\d\d/g, (c) => `<span class="nw">${c}</span>`)}</span></div>
     </div>`;
   }
 
@@ -234,6 +259,7 @@
     MapKiosk.render(document.getElementById("map"), currentId, lang, theme, view);
     renderInfo();
     document.querySelectorAll(".shopcard").forEach((c) => c.classList.toggle("sel", c.dataset.id === currentId));
+    keepChosenInView();
   }
   /* Tapping the kitchen that is already chosen: an empty unit is let go (there is nothing to
    * walk to), anything else re-frames its route. */
@@ -303,9 +329,25 @@
   }
   function startPoll() { if (pollTimer) clearInterval(pollTimer); pollTimer = setInterval(refreshContent, (S().refreshSeconds || CONFIG.refreshSeconds || 180) * 1000); }
 
-  /* ---------- idle ---------- */
-  function resetIdle() { if (idleTimer) clearTimeout(idleTimer); idleTimer = setTimeout(() => show("attract", "idle"), IDLE_MS); }
-  function stopIdle() { if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; } }
+  /* ---------- idle: a visible countdown before the board returns to the ads ----------
+   * (the idle time itself stays the admin setting; the warning takes its last third, 3-10 s) */
+  let warnTimer = null, warnTick = null;
+  const warnMs = () => Math.min(10000, Math.max(3000, IDLE_MS / 3));
+  function resetIdle() {
+    stopIdle();
+    warnTimer = setTimeout(startWarn, Math.max(0, IDLE_MS - warnMs()));
+    idleTimer = setTimeout(() => show("attract", "idle"), IDLE_MS);
+  }
+  function stopIdle() {
+    clearTimeout(idleTimer); clearTimeout(warnTimer); clearInterval(warnTick); idleTimer = warnTimer = warnTick = null;
+    const w = document.getElementById("idleWarn"); if (w) w.classList.remove("show");
+  }
+  function startWarn() {
+    const w = document.getElementById("idleWarn"); if (!w) return;
+    const end = Date.now() + warnMs();
+    const paint = () => { const s = Math.max(1, Math.ceil((end - Date.now()) / 1000)); w.innerHTML = `<b>${I18N.idleWarn[lang]}</b><span>${I18N.idleBack[lang].replace("{s}", s)}</span>`; };
+    paint(); w.classList.add("show"); warnTick = setInterval(paint, 250);
+  }
 
   /* ---------- colour helper ---------- */
   function parse(hex) { const h = String(hex || "").replace("#", ""); if (!/^[0-9a-fA-F]{6}$/.test(h)) return [138, 147, 164]; return [parseInt(h.substr(0, 2), 16), parseInt(h.substr(2, 2), 16), parseInt(h.substr(4, 2), 16)]; }
@@ -320,6 +362,9 @@
   document.getElementById("homeBtn").addEventListener("click", (e) => { e.stopPropagation(); show("attract", "home"); });
 
   ["pointerdown", "click"].forEach((ev) => document.addEventListener(ev, () => { if (!screens.attract.classList.contains("active")) resetIdle(); }, { passive: true }));
+  const rowEl = document.getElementById("shoprow"); if (rowEl) rowEl.addEventListener("scroll", updateMore, { passive: true });
+  const moreEl = document.getElementById("listMore"); if (moreEl) moreEl.addEventListener("click", () => rowEl.scrollBy({ top: rowEl.clientHeight * .8, behavior: "smooth" }));
+  addEventListener("resize", updateMore);
   document.addEventListener("contextmenu", (e) => e.preventDefault());
   document.addEventListener("gesturestart", (e) => e.preventDefault());
 

@@ -29,14 +29,16 @@ const MapKiosk = (function () {
   function zoneText(face, lang) {
     return ({ down: { en: "along the top row", zh: "顶部一排" }, up: { en: "in the centre", zh: "中央区域" },
               right: { en: "in the far-left row", zh: "最左侧一排" }, lower: { en: "in the lower-centre row", zh: "下方一排" },
-              k1k2: { en: "in the lower row, through the K1 & 2 entrance", zh: "下方一排，经 K1 & 2 入口进入" } }[face])[lang];
+              k1k2: { en: "in the lower row, through the K-01 / K-02 entrance", zh: "下方一排，经 K-01／K-02 入口进入" } }[face])[lang];
   }
   function directions(id, lang) {
-    const u = FP.units[id], k = kitchenOf(id), zone = zoneText(u.face, lang), code = id.replace("K", "K-");
+    const u = FP.units[id], k = kitchenOf(id), code = id.replace("K", "K-");
+    // K-03 opens onto the lower corridor but sits in the bottom-left corner, not the lower-centre row
+    const zone = id === "K03" ? (lang === "zh" ? "左下角" : "in the bottom-left corner") : zoneText(u.face, lang);
     const name = (k.name && (k.name[lang] || k.name.en)) || code;   // same current→en fallback as app.js pick()
     return lang === "zh"
-      ? `从这里沿走廊前行 —— ${name}（${code}）位于${zone}，跟随高亮路线即可到达。`
-      : `Follow the corridor from here — ${name} (${code}) is ${zone}. Just follow the highlighted path.`;
+      ? `从这里沿走廊前行——${name}（${code}）位于${zone}，跟着地图上的路线走即可。`
+      : `Follow the corridor from here — ${name} (${code}) is ${zone}. Just follow the route on the map.`;
   }
 
   /* ---- coordinate mapping: SVG plan units -> world (centred at origin) ---- */

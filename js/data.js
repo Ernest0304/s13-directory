@@ -17,21 +17,21 @@ const FACILITY = {
 
 /* ---- UI copy, English + 中文 ------------------------------------------------ */
 const I18N = {
-  directory:      { en: "Kitchen Directory",      zh: "厨房指南" },
+  directory:      { en: "Kitchen Directory",      zh: "厨房商家指南" },
   touchToBegin:   { en: "TOUCH TO BEGIN",         zh: "触摸屏幕开始" },
   tapAnywhere:    { en: "Tap anywhere to start",  zh: "点击任意位置开始" },
   startOver:      { en: "Start Over",             zh: "重新开始" },
   youAreHere:     { en: "YOU ARE HERE",           zh: "您在这里" },
-  unit:           { en: "UNIT",                   zh: "单元" },
+  unit:           { en: "UNIT",                   zh: "单位" },
   floorPlan:      { en: "Floor Plan",             zh: "平面图" },
   entrance:       { en: "Entrance",               zh: "入口" },
-  k1k2Entrance:   { en: "K1 & 2 entrance",        zh: "K1 & 2 入口" },
-  loadingBay:     { en: "loading bay",            zh: "卸货区" },
-  carPark:        { en: "car park",               zh: "停车场" },
+  k1k2Entrance:   { en: "K-01 / K-02 entrance",   zh: "K-01／K-02 入口" },
+  loadingBay:     { en: "Loading Bay",            zh: "卸货区" },
+  carPark:        { en: "Car Park",               zh: "停车场" },
   dryStore:       { en: "Dry Store",              zh: "干货仓" },
   toilet:         { en: "Toilet",                 zh: "洗手间" },
-  matWash:        { en: "Mat Wash",               zh: "洗垫间" },
-  selectPrompt:   { en: "Tap a kitchen — on the map or below", zh: "点击厨房——地图或下方卡片" },
+  matWash:        { en: "Mat Wash",               zh: "地垫清洗间" },
+  selectPrompt:   { en: "Tap a kitchen — on the map or in the list", zh: "点击厨房——地图或列表均可" },
   pickToStart:    { en: "Pick a kitchen to light up its route", zh: "选择厨房以显示路线" },
   open:           { en: "Open",                   zh: "营业中" },
   closed:         { en: "Closed",                 zh: "已打烊" },
@@ -43,9 +43,12 @@ const I18N = {
   comingSoon:     { en: "Coming soon",            zh: "即将入驻" },
   mapHint:        { en: "Tap a kitchen to see the way · drag to turn the map", zh: "点击厨房查看路线 · 拖动可旋转地图" },
   recentre:       { en: "Reset map",              zh: "地图复位" },
-  available:      { en: "Available",              zh: "待租" },
-  availableTag:   { en: "AVAILABLE",              zh: "招租中" },
-  leaseEnquiry:   { en: "This unit is available — enquire at the management office.", zh: "此单元招租中——详情请咨询管理处。" },
+  available:      { en: "Vacant",                 zh: "空置" },
+  availableTag:   { en: "Vacant unit",            zh: "空置单位" },
+  leaseEnquiry:   { en: "No kitchen is operating in this unit.", zh: "此单位目前没有厨房营业。" },
+  idleWarn:       { en: "Still looking? Touch the screen to stay", zh: "还在看吗？触摸屏幕即可继续" },
+  idleBack:       { en: "Back to the start in {s} s",  zh: "{s} 秒后返回首页" },
+  moreRows:       { en: "{n} more below",         zh: "下方还有 {n} 间" },
 };
 
 /* ---- FALLBACK line-up — used only when the board starts with no database answer and
@@ -60,10 +63,10 @@ const SEED_UNITS = ["K01", "K02", "K03", "K04", "K05", "K06", "K07", "K08", "K09
 /* ---- cuisine filter groups (the chips above the kitchen row) ---- */
 const CATEGORIES = [
   { key: "all",     icon: "🍽️", label: { en: "All", zh: "全部" } },
-  { key: "western", icon: "🍔", label: { en: "Western", zh: "西式" } },
-  { key: "asian",   icon: "🍜", label: { en: "Asian", zh: "亚洲" } },
-  { key: "world",   icon: "🌮", label: { en: "World", zh: "异国" } },
-  { key: "healthy", icon: "🥗", label: { en: "Healthy", zh: "健康" } },
+  { key: "western", icon: "🍔", label: { en: "Western", zh: "西餐" } },
+  { key: "asian",   icon: "🍜", label: { en: "Asian", zh: "亚洲菜" } },
+  { key: "world",   icon: "🌮", label: { en: "World", zh: "环球美食" } },
+  { key: "healthy", icon: "🥗", label: { en: "Healthy", zh: "健康轻食" } },
   { key: "sweets",  icon: "☕", label: { en: "Café & Sweets", zh: "咖啡甜点" } },
 ];
 
