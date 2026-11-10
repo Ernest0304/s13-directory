@@ -39,6 +39,7 @@ const I18N = {
   kitchenWord:    { en: "kitchen",                zh: "间厨房" },
   needHelp:       { en: "Need help? Just ask any staff member.", zh: "需要帮助？请询问任何工作人员。" },
   noneInCat:      { en: "No kitchens in this category", zh: "此分类暂无厨房" },
+  noneAtAll:      { en: "No kitchens to show right now", zh: "暂时没有可显示的厨房" },
   showAll:        { en: "Show all kitchens",      zh: "显示全部厨房" },
   comingSoon:     { en: "Coming soon",            zh: "即将入驻" },
   mapHint:        { en: "Tap a kitchen to see the way · drag to turn the map", zh: "点击厨房查看路线 · 拖动可旋转地图" },

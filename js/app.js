@@ -122,6 +122,15 @@
 
   /* ---------- attract carousel (occupied units only) ---------- */
   function buildSlides() {
+    if (!occupiedUnits().length) {
+      const s = S();
+      document.getElementById("slides").innerHTML = `<div class="slide show" style="background:radial-gradient(125% 100% at 50% 34%, #23262d, #07080c 70%)">
+        <div class="medallion" style="background:#ffffff"><img src="img/logo.png?v=3" alt=""></div>
+        <h2>${esc((s.name || FACILITY.brand).en)}</h2>
+        <div class="cuisine">${esc((s.subtitle || I18N.directory)[lang])}</div>
+      </div>`;
+      return;
+    }
     document.getElementById("slides").innerHTML = occupiedUnits().map((k) => {
       const bg = k.adBg
         ? `linear-gradient(rgba(6,7,11,.45), rgba(6,7,11,.72)), url("${esc(k.adBg)}") center/cover`
@@ -200,7 +209,7 @@
         ${cuisine ? `<span class="cz">${esc(cuisine)}</span>` : ""}
         ${statusHTML(k)}
       </button>`; }).join("")
-      : `<div class="info-empty" style="margin:auto"><div class="t2">${I18N.noneInCat[lang]}</div>${filterCat !== "all" ? `<button class="chip show-all">${I18N.showAll[lang]}</button>` : ""}</div>`;
+      : `<div class="info-empty" style="margin:auto"><div class="t2">${(filterCat === "all" ? I18N.noneAtAll : I18N.noneInCat)[lang]}</div>${filterCat !== "all" ? `<button class="chip show-all">${I18N.showAll[lang]}</button>` : ""}</div>`;
     row.querySelectorAll(".shopcard").forEach((c) => c.addEventListener("click", () => selectShop(c.dataset.id)));
     const all = row.querySelector(".show-all"); if (all) all.addEventListener("click", () => setFilter("all"));
     updateMore();
