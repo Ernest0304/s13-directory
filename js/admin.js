@@ -2,126 +2,187 @@
  * admin.js — staff CMS. Login with the shared password, edit each unit's
  * content (name/cuisine/tagline/hours/category/colour/icon + occupied), upload
  * logo + ad background to Supabase Storage, and save back to the database.
- * Reuses db.js (adminSignIn / adminSaveUnit / adminUploadAsset / loadContent).
+ *
+ * The hourly rent-roll sync owns two things: whether a kitchen is on the board,
+ * and the name of a new licensee. Everything else is filled in here.
+ * Reuses db.js (adminSignIn / adminLoadContent / adminSaveUnit / adminUploadAsset).
  * ========================================================================== */
 
 (function () {
   "use strict";
 
-  let units = [], selected = null, site = null;
+  let units = [], selected = null, draft = null, site = null, dirty = false, signedIn = false, uploading = 0;
   const $ = (id) => document.getElementById(id);
-  const esc = (s) => (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const clock = (d) => d.toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" });
+  const refreshMin = () => Math.max(1, Math.round(((site && site.refreshSeconds) || 180) / 60));
+  const isSoon = (u) => !u.occupied && !!((u.name.en || u.name.zh || "").trim());
+  const current = () => units.find((x) => x.id === selected);
 
+  let toastTimer = null;
   function toast(msg, ok = true) {
-    const t = $("toast"); t.textContent = msg; t.className = "toast show" + (ok ? "" : " bad");
-    setTimeout(() => { t.className = "toast" + (ok ? "" : " bad"); }, 2600);
+    const t = $("toast"); clearTimeout(toastTimer);
+    t.textContent = msg; t.className = "toast show" + (ok ? "" : " bad");
+    toastTimer = setTimeout(() => { t.className = "toast" + (ok ? "" : " bad"); }, 4000);
+  }
+  /* the line beside Save stays until the next action: saved / not saved and why */
+  function setStatus(html, kind) { const s = $("saveStatus"); if (s) { s.innerHTML = html; s.className = "status " + (kind || ""); } }
+
+  /* ---------- login + load ---------- */
+  async function unlock(e) {
+    if (e) e.preventDefault();
+    $("loginErr").textContent = "";
+    if (!signedIn) {
+      const pwd = $("pwd").value.trim(); if (!pwd) return;
+      $("unlockBtn").disabled = true;
+      try { await adminSignIn(pwd); signedIn = true; $("pwd").value = ""; }
+      catch (err) { $("loginErr").textContent = /invalid/i.test(err.message) ? "Wrong password." : (err.message || "Login failed"); $("unlockBtn").disabled = false; return; }
+    }
+    $("unlockBtn").disabled = true;
+    try { await load(); }
+    catch (err) {
+      // signed in, but the content did not come: do not open the editor on anything else
+      $("loginErr").textContent = err.message + " Nothing was opened, so nothing can be saved by mistake.";
+      $("pwd").classList.add("hidden"); $("unlockBtn").textContent = "Try again";
+      $("unlockBtn").disabled = false; return;
+    }
+    $("login").classList.add("hidden");
+    $("editor").classList.remove("hidden");
+    $("logoutBtn").classList.remove("hidden");
+    $("unlockBtn").disabled = false;
+  }
+  async function load() {
+    const data = await adminLoadContent();
+    units = data.units.sort((a, b) => a.unit.localeCompare(b.unit));
+    site = data.site;
+    $("loadedAt").textContent = "Loaded " + clock(data.at);
+    dirty = false;
+    selectUnit(current() ? selected : units[0].id, true);
+    if (!$("tab-site").classList.contains("hidden")) renderSite();
   }
 
-  /* ---------- login ---------- */
-  async function unlock() {
-    const pwd = $("pwd").value.trim();
-    if (!pwd) return;
-    $("unlockBtn").disabled = true; $("loginErr").textContent = "";
-    try {
-      await adminSignIn(pwd);
-      await loadContent();
-      units = [...KITCHENS].sort((a, b) => a.unit.localeCompare(b.unit));
-      site = JSON.parse(JSON.stringify(SETTINGS || {}));
-      $("login").classList.add("hidden");
-      $("editor").classList.remove("hidden");
-      $("logoutBtn").classList.remove("hidden");
-      renderList();
-      if (units[0]) selectUnit(units[0].id);
-    } catch (e) {
-      $("loginErr").textContent = e.message || "Login failed";
-    } finally { $("unlockBtn").disabled = false; }
+  /* ---------- unit list: what is on the board, and what each kitchen still lacks ---------- */
+  function gaps(u) {
+    const g = [];
+    if (!u.logo) g.push("no logo");
+    if (!u.hasHours) g.push("hours?");
+    if (!(u.cuisine.en || "").trim()) g.push("no cuisine");
+    return g;
   }
-
-  /* ---------- unit list ---------- */
   function renderList() {
-    $("unitList").innerHTML = units.map((u) => `
-      <button class="ul-item ${u.id === selected ? "active" : ""}" data-id="${u.id}">
-        <span class="ul-dot ${u.occupied ? "on" : "off"}"></span>
-        <span class="ul-code">${u.unit}</span>
-        <span class="ul-name">${u.occupied ? esc(u.name.en || "(no name)") : "Available"}</span>
-      </button>`).join("");
+    const live = units.filter((u) => u.occupied), need = (k) => live.filter((u) => gaps(u).includes(k)).length;
+    const summary = `<div class="ul-sum"><b>${live.length} on the board</b>${live.length ? ` · ${need("no logo")} need a logo · ${need("hours?")} need hours · ${need("no cuisine")} need a cuisine` : ""}</div>`;
+    $("unitList").innerHTML = summary + units.map((u) => {
+      const state = u.occupied ? "on" : isSoon(u) ? "soon" : "off";
+      const name = u.occupied || isSoon(u) ? esc(u.name.en || u.name.zh || "(no name)") : "Vacant";
+      const tags = (isSoon(u) ? `<span class="ul-tag soon">not on the board yet</span>` : "")
+        + (u.occupied || isSoon(u) ? gaps(u).map((t) => `<span class="ul-tag">${t}</span>`).join("") : "")
+        + (u.id === selected && dirty ? `<span class="ul-tag unsaved">unsaved</span>` : "");
+      return `
+      <button class="ul-item ${u.id === selected ? "active" : ""}" type="button" data-id="${esc(u.id)}">
+        <span class="ul-dot ${state}"></span>
+        <span class="ul-code">${esc(u.unit)}</span>
+        <span class="ul-main"><span class="ul-name">${name}</span>${tags ? `<span class="ul-tags">${tags}</span>` : ""}</span>
+      </button>`;
+    }).join("");
     $("unitList").querySelectorAll(".ul-item").forEach((b) => b.addEventListener("click", () => selectUnit(b.dataset.id)));
   }
 
-  /* ---------- edit form ---------- */
-  function selectUnit(id) {
-    selected = id; renderList();
-    const u = units.find((x) => x.id === id);
-    $("unitForm").innerHTML = formHTML(u);
-    wireForm(u);
+  /* ---------- edit form (works on a draft; the kitchen changes only once the database says so) ---------- */
+  function selectUnit(id, force) {
+    if (!force && dirty && id !== selected) {
+      setStatus(`Unsaved changes to ${esc(current().unit)}: save them, or <button type="button" class="linkbtn" id="discardBtn">discard them</button>.`, "warn");
+      $("discardBtn").addEventListener("click", () => { dirty = false; selectUnit(id, true); });
+      return;
+    }
+    selected = id; dirty = false;
+    draft = clone(current());
+    $("unitForm").innerHTML = formHTML(draft);
+    wireForm();
+    renderList();
+    if (!force && matchMedia("(max-width: 920px)").matches) $("unitForm").scrollIntoView({ block: "start", behavior: "smooth" });
   }
   const imgPrev = (url) => (url ? `<img src="${esc(url)}" alt="">` : `<span class="noimg">none</span>`);
 
   function formHTML(u) {
     const cats = `<option value="" ${u.cat ? "" : "selected"}>— none (listed under All only)</option>` + CATEGORIES.filter((c) => c.key !== "all")
       .map((c) => `<option value="${c.key}" ${u.cat === c.key ? "selected" : ""}>${c.icon} ${c.label.en}</option>`).join("");
+    const changed = u.updatedAt ? new Date(u.updatedAt).toLocaleString("en-SG", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
     return `
       <div class="form-head">
-        <h2>${u.unit}</h2>
-        <label class="switch"><input type="checkbox" id="f_occ" ${u.occupied ? "checked" : ""}/><span>Occupied</span></label>
+        <div><h2>${esc(u.unit)}</h2>${changed ? `<div class="updated">Last changed ${esc(changed)}</div>` : ""}</div>
+        <label class="switch"><input type="checkbox" id="f_occ" ${u.occupied ? "checked" : ""}/><span>On the board</span></label>
+      </div>
+      <p class="field-note">${isSoon(u)
+        ? "Signed, not moved in yet: the wall shows it as “Coming soon”, and it switches on by itself on its access date."
+        : "On/off follows the rent roll, checked every hour: on from the access date, off the day after the licence ends. A change here is undone at the next check, unless this kitchen is not in the rent roll."}</p>
+      <div class="grid2">
+        <label>Name (English) <span class="hint">the name riders know</span><input id="f_name_en" maxlength="60" value="${esc(u.name.en)}"/></label>
+        <label>名称 (中文) <span class="hint">optional — the English name is used if blank</span><input id="f_name_zh" maxlength="40" value="${esc(u.name.zh)}"/></label>
+        <label>Cuisine (English) <span class="hint">e.g. Korean Homestyle</span><input id="f_cui_en" maxlength="40" value="${esc(u.cuisine.en)}"/></label>
+        <label>菜系 (中文) <span class="hint">optional</span><input id="f_cui_zh" maxlength="40" value="${esc(u.cuisine.zh)}"/></label>
+        <label>Hours <span class="hint">leave both blank if unknown — the board then shows none</span><span class="hoursrow"><input type="time" id="f_open" aria-label="Opens" value="${esc(u.hours.open)}"/><span>–</span><input type="time" id="f_close" aria-label="Closes" value="${esc(u.hours.close)}"/></span></label>
+        <label>Category <span class="hint">the filter it appears under</span><select id="f_cat">${cats}</select></label>
       </div>
       <div class="grid2">
-        <label>Name (EN)<input id="f_name_en" value="${esc(u.name.en)}" placeholder="e.g. Sweet Lab"/></label>
-        <label>名称 (中)<input id="f_name_zh" value="${esc(u.name.zh)}" placeholder="例如 甜点实验室"/></label>
-        <label>Cuisine (EN)<input id="f_cui_en" value="${esc(u.cuisine.en)}" placeholder="e.g. Desserts"/></label>
-        <label>菜系 (中)<input id="f_cui_zh" value="${esc(u.cuisine.zh)}" placeholder="例如 甜品"/></label>
-        <label>Tagline (EN)<input id="f_tag_en" value="${esc(u.tagline.en)}"/></label>
-        <label>标语 (中)<input id="f_tag_zh" value="${esc(u.tagline.zh)}"/></label>
-        <label>Category<select id="f_cat">${cats}</select></label>
-        <label>Accent colour<span class="colorrow"><input type="color" id="f_color" value="${/^#[0-9a-fA-F]{6}$/.test(u.color) ? u.color : "#888888"}"/><input type="text" id="f_color_t" value="${esc(u.color || "")}"/></span></label>
-        <label>Icon (emoji)<input id="f_icon" value="${esc(u.icon || "")}" placeholder="🍰"/></label>
-        <label>Hours <span class="hint">leave both blank if unknown — the board then shows no hours</span><span class="hoursrow"><input type="time" id="f_open" value="${esc(u.hours.open)}"/><span>–</span><input type="time" id="f_close" value="${esc(u.hours.close)}"/></span></label>
+        <div class="upload"><div class="up-label">Logo <span class="hint">PNG or JPG, square if possible, 512 px or more. Shown inside a white circle: avoid white logos and long word-marks.</span></div><div class="preview logo" id="pv_logo">${imgPrev(u.logo)}</div><div class="up-row"><input type="file" id="f_logo" accept="image/png,image/jpeg,image/webp"/><button type="button" class="btn ghost sm" id="rm_logo" ${u.logo ? "" : "hidden"}>Remove</button></div></div>
+        <div class="upload"><div class="up-label">Ad background <span class="hint">Landscape photo, about 1920 × 1080. It is darkened and the name sits on top: avoid pictures with words. Leave empty to use the logo colour.</span></div><div class="preview wide" id="pv_bg">${imgPrev(u.adBg)}</div><div class="up-row"><input type="file" id="f_bg" accept="image/png,image/jpeg,image/webp"/><button type="button" class="btn ghost sm" id="rm_bg" ${u.adBg ? "" : "hidden"}>Remove</button></div></div>
       </div>
-      <div class="grid2">
-        <div class="upload"><div class="up-label">Logo <span class="hint">Square PNG · transparent background · ~512×512 px</span></div><div class="preview logo" id="pv_logo">${imgPrev(u.logo)}</div><div class="up-row"><input type="file" id="f_logo" accept="image/*"/><button type="button" class="btn ghost sm" id="rm_logo" ${u.logo ? "" : "hidden"}>Remove</button></div></div>
-        <div class="upload"><div class="up-label">Ad background <span class="hint">Landscape JPG/PNG · ~1600×1000 px · leave empty to auto-match the logo colour</span></div><div class="preview wide" id="pv_bg">${imgPrev(u.adBg)}</div><div class="up-row"><input type="file" id="f_bg" accept="image/*"/><button type="button" class="btn ghost sm" id="rm_bg" ${u.adBg ? "" : "hidden"}>Remove</button></div></div>
-      </div>
-      <div class="form-foot"><button class="btn" id="saveBtn">Save changes</button></div>`;
+      <details class="extras">
+        <summary>Extras — tagline, colour, icon</summary>
+        <div class="grid2">
+          <label>Tagline (English)<input id="f_tag_en" maxlength="60" value="${esc(u.tagline.en)}"/></label>
+          <label>标语 (中文)<input id="f_tag_zh" maxlength="40" value="${esc(u.tagline.zh)}"/></label>
+          <label>Accent colour <span class="hint">set from the logo on upload</span><span class="colorrow"><input type="color" id="f_color" aria-label="Accent colour" value="${/^#[0-9a-fA-F]{6}$/.test(u.color) ? u.color : "#888888"}"/><input type="text" id="f_color_t" aria-label="Colour code" value="${esc(u.color || "")}"/></span></label>
+          <label>Icon <span class="hint">one emoji, used only when there is no logo</span><input id="f_icon" maxlength="8" value="${esc(u.icon || "")}"/></label>
+        </div>
+      </details>
+      <div class="form-foot"><span class="status" id="saveStatus" role="status" aria-live="polite"></span><button class="btn" id="saveBtn" type="button">Save changes</button></div>`;
   }
 
-  function wireForm(u) {
+  function wireForm() {
+    const form = $("unitForm");
+    const mark = () => { if (!dirty) { dirty = true; renderList(); setStatus("Unsaved changes.", "warn"); } };
+    form.querySelectorAll("input:not([type=file]), select").forEach((el) => el.addEventListener("input", mark));
     $("f_color").addEventListener("input", (e) => { $("f_color_t").value = e.target.value; });
     $("f_color_t").addEventListener("input", (e) => { if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) $("f_color").value = e.target.value; });
-    $("f_logo").addEventListener("change", (e) => handleUpload(e, u, "logo", "pv_logo", "rm_logo"));
-    $("f_bg").addEventListener("change", (e) => handleUpload(e, u, "adBg", "pv_bg", "rm_bg"));
-    $("rm_logo").addEventListener("click", () => removeAsset(u, "logo", "pv_logo", "rm_logo", "f_logo"));
-    $("rm_bg").addEventListener("click", () => removeAsset(u, "adBg", "pv_bg", "rm_bg", "f_bg"));
-    $("saveBtn").addEventListener("click", () => saveUnit(u));
+    $("f_logo").addEventListener("change", (e) => handleUpload(e, "logo", "pv_logo", "rm_logo", mark));
+    $("f_bg").addEventListener("change", (e) => handleUpload(e, "adBg", "pv_bg", "rm_bg", mark));
+    $("rm_logo").addEventListener("click", () => { removeAsset("logo", "pv_logo", "rm_logo", "f_logo"); mark(); });
+    $("rm_bg").addEventListener("click", () => { removeAsset("adBg", "pv_bg", "rm_bg", "f_bg"); mark(); });
+    $("saveBtn").addEventListener("click", saveUnit);
   }
 
-  /* clear a logo / ad background back to none (the map falls back to the emoji
-     icon, the ad slide to the auto colour). Takes effect on Save. */
-  function removeAsset(u, field, pvId, rmId, fileId) {
-    u[field] = null;
-    const pv = $(pvId);
-    pv.replaceChildren();
-    const s = document.createElement("span");
-    s.className = "noimg"; s.textContent = "none";
-    pv.appendChild(s);
+  /* clear a logo / ad background back to none on the draft (the board falls back to the icon /
+     the logo colour). Takes effect on Save. */
+  function removeAsset(field, pvId, rmId, fileId) {
+    draft[field] = null;
+    const pv = $(pvId); pv.replaceChildren();
+    const s = document.createElement("span"); s.className = "noimg"; s.textContent = "none"; pv.appendChild(s);
     $(rmId).hidden = true;
     $(fileId).value = "";                      // let the same file be re-picked later
-    toast(field === "logo" ? "Logo removed — remember to Save" : "Background removed — remember to Save");
   }
 
-  async function handleUpload(e, u, field, pvId, rmId) {
+  async function handleUpload(e, field, pvId, rmId, mark) {
     const file = e.target.files[0]; if (!file) return;
-    const pv = $(pvId); pv.innerHTML = `<span class="noimg">uploading…</span>`;
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { setStatus("That file is not a PNG, JPG or WebP picture.", "bad"); e.target.value = ""; return; }
+    const u = draft, pv = $(pvId); pv.innerHTML = `<span class="noimg">uploading…</span>`;
+    uploading++; $("saveBtn").disabled = true;
     try {
+      let matched = false;
       if (field === "logo") {                         // derive accent colour so the background matches the logo
         const c = await dominantColor(file).catch(() => null);
-        if (c) { u.color = c; const cc = $("f_color"), ct = $("f_color_t"); if (cc) cc.value = c; if (ct) ct.value = c; }
+        if (c) { u.color = c; matched = true; const cc = $("f_color"), ct = $("f_color_t"); if (cc) cc.value = c; if (ct) ct.value = c; }
       }
       const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "");
       const url = await adminUploadAsset(file, `${u.unit}/${field}-${Date.now()}.${ext}`);
       u[field] = url; pv.innerHTML = imgPrev(url);
       if (rmId && $(rmId)) $(rmId).hidden = false;      // an image exists now — offer Remove
-      toast(field === "logo" ? "Logo uploaded — accent set to match. Save to apply." : "Background uploaded — remember to Save");
-    } catch (err) { pv.innerHTML = imgPrev(u[field]); toast(err.message, false); }
+      mark();
+      setStatus((field === "logo" ? "Logo uploaded" + (matched ? ", accent colour set to match" : "") : "Background uploaded") + ". Save to put it on the board.", "warn");
+    } catch (err) { pv.innerHTML = imgPrev(u[field]); setStatus(esc(err.message), "bad"); }
+    finally { uploading--; if (!uploading) $("saveBtn").disabled = false; }
   }
 
   /* representative colour of a logo (skips transparent / near-white / near-black, favours vivid pixels) */
@@ -149,95 +210,114 @@
     });
   }
 
-  async function saveUnit(u) {
-    u.occupied = $("f_occ").checked;
-    u.name = { en: $("f_name_en").value.trim(), zh: $("f_name_zh").value.trim() };
-    u.cuisine = { en: $("f_cui_en").value.trim(), zh: $("f_cui_zh").value.trim() };
-    u.tagline = { en: $("f_tag_en").value.trim(), zh: $("f_tag_zh").value.trim() };
-    u.cat = $("f_cat").value;
+  async function saveUnit() {
+    const next = clone(draft);
+    next.occupied = $("f_occ").checked;
+    next.name = { en: $("f_name_en").value.trim(), zh: $("f_name_zh").value.trim() };
+    next.cuisine = { en: $("f_cui_en").value.trim(), zh: $("f_cui_zh").value.trim() };
+    next.tagline = { en: $("f_tag_en").value.trim(), zh: $("f_tag_zh").value.trim() };
+    next.cat = $("f_cat").value;
     const ct = $("f_color_t").value.trim();
-    u.color = /^#[0-9a-fA-F]{6}$/.test(ct) ? ct : $("f_color").value;   // fall back to the picker (always valid hex)
-    u.icon = $("f_icon").value.trim();
+    if (ct && !/^#[0-9a-fA-F]{6}$/.test(ct)) { $("unitForm").querySelector(".extras").open = true; return setStatus("The colour code must look like #1A2B3C.", "bad"); }
+    next.color = ct || $("f_color").value;
+    next.icon = $("f_icon").value.trim();
     const open = $("f_open").value, close = $("f_close").value;
-    if (!!open !== !!close) { toast("Enter both opening and closing time, or leave both blank", false); return; }
-    u.hours = { open, close }; u.hasHours = !!(open && close);
-    $("saveBtn").disabled = true;
-    try { await adminSaveUnit(u); toast("Saved ✓"); renderList(); }
-    catch (e) { toast(e.message, false); }
-    finally { const b = $("saveBtn"); if (b) b.disabled = false; }
+    if (!!open !== !!close) return setStatus("Enter both the opening and the closing time, or leave both blank.", "bad");
+    next.hours = { open, close }; next.hasHours = !!(open && close);
+    if (next.occupied && !next.name.en) return setStatus("A kitchen on the board needs an English name.", "bad");
+    $("saveBtn").disabled = true; setStatus("Saving…", "");
+    try {
+      const row = await adminSaveUnit(next);
+      next.updatedAt = (row && row.updated_at) || new Date().toISOString();
+      units[units.findIndex((x) => x.id === next.id)] = next;
+      draft = clone(next); dirty = false;
+      renderList();
+      const head = $("unitForm").querySelector(".updated");
+      if (head) head.textContent = "Last changed " + new Date(next.updatedAt).toLocaleString("en-SG", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      setStatus(`Saved ${clock(new Date())} — on the wall within ${refreshMin()} min.`, "ok");
+    } catch (e) { setStatus(esc(e.message), "bad"); }       // nothing typed is lost: the form keeps it
+    finally { $("saveBtn").disabled = false; }
   }
 
   /* ---------- tabs ---------- */
   function showTab(name) {
     $("tab-units").classList.toggle("hidden", name !== "units");
     $("tab-site").classList.toggle("hidden", name !== "site");
-    document.querySelectorAll(".adm-tabs .tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
+    document.querySelectorAll(".adm-tabs .tab").forEach((b) => { const on = b.dataset.tab === name; b.classList.toggle("active", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
     if (name === "site") renderSite();
   }
 
   /* ---------- site settings form ---------- */
+  const LIMITS = { s_slide: [2, 60, "seconds per slide"], s_idle: [10, 600, "seconds"], s_refresh: [15, 3600, "seconds"] };
   function renderSite() {
     const s = site || {};
     const opt = (v, cur, label) => `<option value="${v}"${cur === v ? " selected" : ""}>${label}</option>`;
     $("tab-site").innerHTML = `
       <h3>Identity</h3>
       <div class="grid2">
-        <label>Facility name (EN)<input id="s_name_en" value="${esc(s.name.en)}" placeholder="KitchenBASE"/></label>
-        <label>名称 (中)<input id="s_name_zh" value="${esc(s.name.zh)}" placeholder="KitchenBASE"/></label>
-        <label>Subtitle (EN)<input id="s_sub_en" value="${esc(s.subtitle.en)}" placeholder="Kitchen Directory"/></label>
-        <label>副标题 (中)<input id="s_sub_zh" value="${esc(s.subtitle.zh)}" placeholder="厨房指南"/></label>
-        <label>Address (EN)<input id="s_addr_en" value="${esc(s.address.en)}" placeholder="Bedok Food City"/></label>
-        <label>地址 (中)<input id="s_addr_zh" value="${esc(s.address.zh)}" placeholder="勿洛美食城"/></label>
+        <label>Facility name <span class="hint">shown in English in both languages</span><input id="s_name_en" value="${esc(s.name.en)}" placeholder="KitchenBASE"/></label>
+        <label>Subtitle (English)<input id="s_sub_en" value="${esc(s.subtitle.en)}" placeholder="Kitchen Directory"/></label>
+        <label>副标题 (中文)<input id="s_sub_zh" value="${esc(s.subtitle.zh)}" placeholder="厨房商家指南"/></label>
       </div>
-      <h3>Attract / ad screen</h3>
+      <h3>Ad screen</h3>
       <div class="grid2">
-        <label>Call-to-action (EN)<input id="s_cta_en" value="${esc(s.ctaMain.en)}" placeholder="TOUCH TO BEGIN"/></label>
-        <label>主按钮文字 (中)<input id="s_cta_zh" value="${esc(s.ctaMain.zh)}" placeholder="触摸屏幕开始"/></label>
-        <label>Sub-text (EN)<input id="s_csub_en" value="${esc(s.ctaSub.en)}" placeholder="Tap anywhere to start"/></label>
-        <label>副文字 (中)<input id="s_csub_zh" value="${esc(s.ctaSub.zh)}" placeholder="点击任意位置开始"/></label>
-        <label>Ad slide duration <span class="hint">seconds per slide</span><input type="number" min="2" max="60" id="s_slide" value="${s.slideSeconds}"/></label>
-        <label>Return to ads when idle <span class="hint">seconds of inactivity</span><input type="number" min="10" max="600" id="s_idle" value="${s.idleSeconds}"/></label>
+        <label>Call to action (English)<input id="s_cta_en" value="${esc(s.ctaMain.en)}" placeholder="TOUCH TO BEGIN"/></label>
+        <label>主按钮文字 (中文)<input id="s_cta_zh" value="${esc(s.ctaMain.zh)}" placeholder="触摸屏幕开始"/></label>
+        <label>Ad slide duration <span class="hint">2–60 seconds per slide</span><input type="number" min="2" max="60" id="s_slide" value="${esc(s.slideSeconds)}"/></label>
+        <label>Back to the ads after <span class="hint">10–600 seconds without a touch (the board warns in the last few seconds)</span><input type="number" min="10" max="600" id="s_idle" value="${esc(s.idleSeconds)}"/></label>
       </div>
       <h3>Footer</h3>
       <div class="grid2">
-        <label>Help line (EN)<input id="s_help_en" value="${esc(s.help.en)}" placeholder="Need help? Just ask any staff member."/></label>
-        <label>帮助提示 (中)<input id="s_help_zh" value="${esc(s.help.zh)}" placeholder="需要帮助？请询问任何工作人员。"/></label>
-        <label>Hours shown — open <span class="hint">blank = worked out from the kitchens, shown only when every kitchen has hours</span><input type="time" id="s_hopen" value="${esc(s.hoursOpen)}"/></label>
-        <label>Hours shown — close <span class="hint">blank = worked out from the kitchens, shown only when every kitchen has hours</span><input type="time" id="s_hclose" value="${esc(s.hoursClose)}"/></label>
+        <label>Help line (English)<input id="s_help_en" value="${esc(s.help.en)}"/></label>
+        <label>帮助提示 (中文)<input id="s_help_zh" value="${esc(s.help.zh)}"/></label>
+        <label>Opening hours shown — from <span class="hint">blank = worked out from the kitchens, shown only when every kitchen has hours</span><input type="time" id="s_hopen" value="${esc(s.hoursOpen)}"/></label>
+        <label>— to<input type="time" id="s_hclose" value="${esc(s.hoursClose)}"/></label>
       </div>
-      <h3>Defaults</h3>
+      <h3>Behaviour</h3>
       <div class="grid2">
-        <label>Default theme<select id="s_theme">${opt("bright", s.defaultTheme, "Day (bright)")}${opt("dark", s.defaultTheme, "Night (dark)")}</select></label>
-        <label>Default map view<select id="s_view">${opt("3d", s.defaultView, "3D")}${opt("2d", s.defaultView, "2D")}</select></label>
-        <label>Default language<select id="s_lang">${opt("en", s.defaultLang, "English")}${opt("zh", s.defaultLang, "中文")}</select></label>
-        <label>Content refresh <span class="hint">seconds (takes effect on kiosk reload)</span><input type="number" min="15" max="3600" id="s_refresh" value="${s.refreshSeconds}"/></label>
+        <label>Default language <span class="hint">what each new visitor sees first</span><select id="s_lang">${opt("en", s.defaultLang, "English")}${opt("zh", s.defaultLang, "中文")}</select></label>
+        <label>Content refresh <span class="hint">15–3600 seconds; applies after the board's next restart</span><input type="number" min="15" max="3600" id="s_refresh" value="${esc(s.refreshSeconds)}"/></label>
       </div>
-      <div class="form-foot"><button class="btn" id="saveSiteBtn">Save site settings</button></div>`;
+      <p class="field-note">Slide and idle times reach the wall at its next content refresh (within ${refreshMin()} min).</p>
+      <div class="form-foot"><span class="status" id="siteStatus" role="status" aria-live="polite"></span><button class="btn" id="saveSiteBtn" type="button">Save site settings</button></div>`;
     $("saveSiteBtn").addEventListener("click", saveSite);
   }
 
   async function saveSite() {
+    const st = (html, kind) => { const e = $("siteStatus"); e.innerHTML = html; e.className = "status " + (kind || ""); };
     const v = (id) => $(id).value.trim();
-    const num = (id, def) => { const n = parseInt($(id).value, 10); return Number.isFinite(n) ? n : def; };
-    site.name     = { en: v("s_name_en"), zh: v("s_name_zh") };
-    site.subtitle = { en: v("s_sub_en"),  zh: v("s_sub_zh") };
-    site.address  = { en: v("s_addr_en"), zh: v("s_addr_zh") };
-    site.ctaMain  = { en: v("s_cta_en"),  zh: v("s_cta_zh") };
-    site.ctaSub   = { en: v("s_csub_en"), zh: v("s_csub_zh") };
-    site.help     = { en: v("s_help_en"), zh: v("s_help_zh") };
-    site.hoursOpen = v("s_hopen"); site.hoursClose = v("s_hclose");
-    site.defaultTheme = $("s_theme").value; site.defaultView = $("s_view").value; site.defaultLang = $("s_lang").value;
-    site.slideSeconds = num("s_slide", 5); site.idleSeconds = num("s_idle", 60); site.refreshSeconds = num("s_refresh", 180);
-    $("saveSiteBtn").disabled = true;
-    try { await adminSaveFacility(site); toast("Site settings saved ✓"); }
-    catch (e) { toast(e.message, false); }
+    for (const [id, [lo, hi, unit]] of Object.entries(LIMITS)) {
+      const n = Number($(id).value);
+      if (!Number.isInteger(n) || n < lo || n > hi) { $(id).focus(); return st(`Enter ${lo} to ${hi} ${unit}.`, "bad"); }
+    }
+    if (!!v("s_hopen") !== !!v("s_hclose")) return st("Enter both opening-hours times, or leave both blank.", "bad");
+    const next = clone(site);
+    next.name     = { en: v("s_name_en"), zh: v("s_name_en") };        // the board shows the English name in both languages
+    next.subtitle = { en: v("s_sub_en"),  zh: v("s_sub_zh") };
+    next.ctaMain  = { en: v("s_cta_en"),  zh: v("s_cta_zh") };
+    next.help     = { en: v("s_help_en"), zh: v("s_help_zh") };
+    next.hoursOpen = v("s_hopen"); next.hoursClose = v("s_hclose");
+    next.defaultLang = $("s_lang").value;
+    next.slideSeconds = Number($("s_slide").value); next.idleSeconds = Number($("s_idle").value); next.refreshSeconds = Number($("s_refresh").value);
+    $("saveSiteBtn").disabled = true; st("Saving…", "");
+    try { await adminSaveFacility(next); site = next; st(`Saved ${clock(new Date())} — on the wall within ${refreshMin()} min.`, "ok"); }
+    catch (e) { st(esc(e.message), "bad"); }
     finally { const b = $("saveSiteBtn"); if (b) b.disabled = false; }
   }
 
   /* ---------- wiring ---------- */
   document.querySelectorAll(".adm-tabs .tab").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
-  $("unlockBtn").addEventListener("click", unlock);
-  $("pwd").addEventListener("keydown", (e) => { if (e.key === "Enter") unlock(); });
-  $("logoutBtn").addEventListener("click", () => location.reload());
+  $("loginForm").addEventListener("submit", unlock);
+  $("reloadBtn").addEventListener("click", async () => {
+    if (dirty) return setStatus(`Unsaved changes to ${esc(current().unit)}: save or discard them before reloading.`, "warn");
+    try { await load(); toast("Reloaded from the database"); } catch (e) { toast(e.message, false); }
+  });
+  let logoutArmed = false;
+  $("logoutBtn").addEventListener("click", () => {
+    if (dirty && !logoutArmed) { logoutArmed = true; return setStatus("Unsaved changes — press Log out again to leave without saving.", "warn"); }
+    location.reload();
+  });
+  addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+  $("user").value = CONFIG.adminEmail || "";
   if (!CONFIG.supabaseUrl) $("loginErr").textContent = "Supabase is not configured in js/config.js yet.";
 })();

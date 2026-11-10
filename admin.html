@@ -3,51 +3,61 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
   <title>S13 Kitchen Directory — Admin</title>
-  <link rel="stylesheet" href="css/admin.css?v=3" />
+  <link rel="icon" type="image/png" href="img/icon-192.png" />
+  <link rel="stylesheet" href="css/admin.css?v=4" />
 </head>
 <body>
   <div class="admin">
     <header class="adm-head">
-      <div class="brand"><span class="badge">S13</span><span><b>Kitchen Directory</b> <span class="sub">Admin</span></span></div>
+      <div class="brand"><img class="mark" src="img/logo.png?v=3" alt="KitchenBASE" /><span><b>S13 Kitchen Directory</b> <span class="sub">Admin</span></span></div>
       <div class="head-actions">
-        <a class="link" href="index-3d.html" target="_blank" rel="noopener">View 3D board ↗</a>
-        <a class="link" href="index.html" target="_blank" rel="noopener">2D board ↗</a>
-        <button id="logoutBtn" class="btn ghost hidden">Log out</button>
+        <a class="link" href="index-3d.html" target="_blank" rel="noopener">Open the wall board ↗</a>
+        <button id="logoutBtn" class="btn ghost sm hidden" type="button">Log out</button>
       </div>
     </header>
 
     <!-- ===== LOGIN ===== -->
     <section id="login" class="login">
-      <div class="login-card">
-        <div class="login-icon">🔒</div>
+      <form class="login-card" id="loginForm">
+        <svg class="login-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
         <h1>Admin access</h1>
         <p>Enter the shared password to manage the S13 directory.</p>
-        <input id="pwd" type="password" placeholder="Password" autocomplete="current-password" />
-        <button id="unlockBtn" class="btn">Unlock</button>
-        <div id="loginErr" class="err"></div>
-      </div>
+        <input id="user" class="sr-only" type="text" name="username" autocomplete="username" readonly tabindex="-1" aria-hidden="true" />
+        <input id="pwd" type="password" name="password" placeholder="Password" autocomplete="current-password" aria-label="Password" />
+        <button id="unlockBtn" class="btn" type="submit">Unlock</button>
+        <div id="loginErr" class="err" role="alert"></div>
+      </form>
     </section>
 
     <!-- ===== EDITOR ===== -->
     <section id="editor" class="editor hidden">
-      <nav class="adm-tabs">
-        <button class="tab active" data-tab="units">Kitchens</button>
-        <button class="tab" data-tab="site">Site settings</button>
-      </nav>
-      <div id="tab-units" class="editor-grid">
-        <aside class="unit-list" id="unitList"></aside>
-        <div class="unit-form" id="unitForm"></div>
+      <div class="editor-top">
+        <nav class="adm-tabs" role="tablist">
+          <button class="tab active" type="button" role="tab" aria-selected="true" data-tab="units">Kitchens</button>
+          <button class="tab" type="button" role="tab" aria-selected="false" data-tab="site">Site settings</button>
+        </nav>
+        <span class="loaded" id="loadedAt"></span>
+        <button class="btn ghost sm" id="reloadBtn" type="button">Reload</button>
+      </div>
+      <div id="tab-units">
+        <p class="sync-note">Names and on/off come from the rent roll, checked every hour. You add cuisine, hours, logo and colour.
+          When a licensee leaves, its details here are cleared automatically.</p>
+        <div class="editor-grid">
+          <aside class="unit-list" id="unitList"></aside>
+          <div class="unit-form" id="unitForm"></div>
+        </div>
       </div>
       <div id="tab-site" class="site-form hidden"></div>
     </section>
 
-    <div id="toast" class="toast"></div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
 
   <script src="js/config.js?v=2"></script>
   <script src="js/data.js?v=23"></script>
-  <script src="js/db.js?v=3"></script>
-  <script src="js/admin.js?v=6"></script>
+  <script src="js/db.js?v=4"></script>
+  <script src="js/admin.js?v=7"></script>
 </body>
 </html>

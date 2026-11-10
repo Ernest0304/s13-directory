@@ -21,7 +21,7 @@
  * (Keep bumping ?v=N in index.html too — it busts the HTTP/CDN layer.)
  * ========================================================================== */
 
-const SW_VERSION = "s13-v30";
+const SW_VERSION = "s13-v31";
 const PRECACHE = "s13-precache-" + SW_VERSION; // app shell, purged on version bump
 const RUNTIME  = "s13-runtime";                // live content + logos, kept across updates
 
@@ -124,7 +124,8 @@ async function staleWhileRevalidate(request) {
 /* ---------- route every GET ---------- */
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  if (request.method !== "GET") return; // logins / saves / uploads go straight to network
+  // logins / saves / uploads, and the admin page's no-store reads, go straight to the network
+  if (request.method !== "GET" || request.cache === "no-store") return;
 
   const url = new URL(request.url);
   if (url.origin === self.location.origin) {

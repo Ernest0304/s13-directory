@@ -80,7 +80,7 @@ function fromRow(r) {
     tagline: { en: r.tagline_en || "", zh: r.tagline_zh || "" },
     cat: r.category || "", color: r.color || "#8A93A4", icon: r.icon || "🍽️",
     hours: { open, close }, hasHours: !!(open && close),
-    logo: r.logo_url || null, adBg: r.ad_bg_url || null,
+    logo: r.logo_url || null, adBg: r.ad_bg_url || null, updatedAt: r.updated_at || null,
   };
 }
 function toRow(u) {
@@ -137,22 +137,44 @@ async function adminSignIn(password) {
   accessToken = (await res.json()).access_token;
   return accessToken;
 }
+/* Admin reads go straight to the database with the admin's token — never to the kiosk's saved
+ * copy or the fallback units: the editor must open on the live rows or not at all. */
+async function adminLoadContent() {
+  const h = { apikey: CONFIG.supabaseAnonKey, Authorization: `Bearer ${accessToken}` };
+  let ur, fr;
+  try {
+    [ur, fr] = await Promise.all([
+      fetch(`${CONFIG.supabaseUrl}/rest/v1/units?select=*&order=sort`, { headers: h, cache: "no-store" }),
+      fetch(`${CONFIG.supabaseUrl}/rest/v1/facility?select=*&limit=1`, { headers: h, cache: "no-store" }),
+    ]);
+  } catch (e) { throw new Error("No connection — the board's content could not be loaded."); }
+  if (!ur.ok || !fr.ok) throw new Error(`The board's content could not be loaded (HTTP ${ur.ok ? fr.status : ur.status}).`);
+  const rows = await ur.json(), fac = await fr.json();
+  if (!Array.isArray(rows) || rows.length !== 12) throw new Error(`Expected the 12 kitchens, the database sent ${Array.isArray(rows) ? rows.length : "none"}.`);
+  return { units: rows.map(fromRow), site: fac && fac[0] ? facilityFromRow(fac[0]) : settingsDefaults(), at: new Date() };
+}
+/* A write the database refused for this login comes back as success with no rows, so every
+ * save asks for the row back and counts it. */
+async function adminWrite(url, method, body, extraPrefer) {
+  let res;
+  try {
+    res = await fetch(url, {
+      method, body: JSON.stringify(body),
+      headers: { apikey: CONFIG.supabaseAnonKey, Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json", Prefer: (extraPrefer ? extraPrefer + "," : "") + "return=representation" },
+    });
+  } catch (e) { throw new Error("Not saved — no connection. Try again."); }
+  if (res.status === 401) throw new Error("Not saved — your sign-in has expired. Log out and in again; nothing you typed is lost until you do.");
+  if (!res.ok) throw new Error("Not saved (HTTP " + res.status + ").");
+  const rows = await res.json().catch(() => null);
+  if (!Array.isArray(rows) || rows.length !== 1) throw new Error("Not saved — the database did not accept the change.");
+  return rows[0];
+}
 async function adminSaveUnit(u) {
-  const res = await fetch(`${CONFIG.supabaseUrl}/rest/v1/units?unit_code=eq.${encodeURIComponent(u.unit)}`, {
-    method: "PATCH",
-    headers: { apikey: CONFIG.supabaseAnonKey, Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json", Prefer: "return=minimal" },
-    body: JSON.stringify(toRow(u)),
-  });
-  if (!res.ok) throw new Error("Save failed (" + res.status + ")");
+  return adminWrite(`${CONFIG.supabaseUrl}/rest/v1/units?unit_code=eq.${encodeURIComponent(u.unit)}`, "PATCH", toRow(u));
 }
 async function adminSaveFacility(s) {
   // upsert on the primary key so it works whether or not the row exists yet
-  const res = await fetch(`${CONFIG.supabaseUrl}/rest/v1/facility`, {
-    method: "POST",
-    headers: { apikey: CONFIG.supabaseAnonKey, Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" },
-    body: JSON.stringify(facilityToRow(s)),
-  });
-  if (!res.ok) throw new Error("Save failed (" + res.status + ")");
+  return adminWrite(`${CONFIG.supabaseUrl}/rest/v1/facility`, "POST", facilityToRow(s), "resolution=merge-duplicates");
 }
 async function adminUploadAsset(file, path) {
   const res = await fetch(`${CONFIG.supabaseUrl}/storage/v1/object/${CONFIG.bucket}/${path}`, {
