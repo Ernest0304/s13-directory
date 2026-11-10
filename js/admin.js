@@ -58,7 +58,7 @@
   const imgPrev = (url) => (url ? `<img src="${esc(url)}" alt="">` : `<span class="noimg">none</span>`);
 
   function formHTML(u) {
-    const cats = CATEGORIES.filter((c) => c.key !== "all")
+    const cats = `<option value="" ${u.cat ? "" : "selected"}>— none (listed under All only)</option>` + CATEGORIES.filter((c) => c.key !== "all")
       .map((c) => `<option value="${c.key}" ${u.cat === c.key ? "selected" : ""}>${c.icon} ${c.label.en}</option>`).join("");
     return `
       <div class="form-head">
@@ -75,7 +75,7 @@
         <label>Category<select id="f_cat">${cats}</select></label>
         <label>Accent colour<span class="colorrow"><input type="color" id="f_color" value="${/^#[0-9a-fA-F]{6}$/.test(u.color) ? u.color : "#888888"}"/><input type="text" id="f_color_t" value="${esc(u.color || "")}"/></span></label>
         <label>Icon (emoji)<input id="f_icon" value="${esc(u.icon || "")}" placeholder="🍰"/></label>
-        <label>Hours<span class="hoursrow"><input type="time" id="f_open" value="${esc(u.hours.open)}"/><span>–</span><input type="time" id="f_close" value="${esc(u.hours.close)}"/></span></label>
+        <label>Hours <span class="hint">leave both blank if unknown — the board then shows no hours</span><span class="hoursrow"><input type="time" id="f_open" value="${esc(u.hours.open)}"/><span>–</span><input type="time" id="f_close" value="${esc(u.hours.close)}"/></span></label>
       </div>
       <div class="grid2">
         <div class="upload"><div class="up-label">Logo <span class="hint">Square PNG · transparent background · ~512×512 px</span></div><div class="preview logo" id="pv_logo">${imgPrev(u.logo)}</div><div class="up-row"><input type="file" id="f_logo" accept="image/*"/><button type="button" class="btn ghost sm" id="rm_logo" ${u.logo ? "" : "hidden"}>Remove</button></div></div>
@@ -158,7 +158,9 @@
     const ct = $("f_color_t").value.trim();
     u.color = /^#[0-9a-fA-F]{6}$/.test(ct) ? ct : $("f_color").value;   // fall back to the picker (always valid hex)
     u.icon = $("f_icon").value.trim();
-    u.hours = { open: $("f_open").value || "10:00", close: $("f_close").value || "22:00" };
+    const open = $("f_open").value, close = $("f_close").value;
+    if (!!open !== !!close) { toast("Enter both opening and closing time, or leave both blank", false); return; }
+    u.hours = { open, close }; u.hasHours = !!(open && close);
     $("saveBtn").disabled = true;
     try { await adminSaveUnit(u); toast("Saved ✓"); renderList(); }
     catch (e) { toast(e.message, false); }
@@ -200,8 +202,8 @@
       <div class="grid2">
         <label>Help line (EN)<input id="s_help_en" value="${esc(s.help.en)}" placeholder="Need help? Just ask any staff member."/></label>
         <label>帮助提示 (中)<input id="s_help_zh" value="${esc(s.help.zh)}" placeholder="需要帮助？请询问任何工作人员。"/></label>
-        <label>Hours shown — open <span class="hint">blank = auto from kitchens</span><input type="time" id="s_hopen" value="${esc(s.hoursOpen)}"/></label>
-        <label>Hours shown — close <span class="hint">blank = auto from kitchens</span><input type="time" id="s_hclose" value="${esc(s.hoursClose)}"/></label>
+        <label>Hours shown — open <span class="hint">blank = worked out from the kitchens, shown only when every kitchen has hours</span><input type="time" id="s_hopen" value="${esc(s.hoursOpen)}"/></label>
+        <label>Hours shown — close <span class="hint">blank = worked out from the kitchens, shown only when every kitchen has hours</span><input type="time" id="s_hclose" value="${esc(s.hoursClose)}"/></label>
       </div>
       <h3>Defaults</h3>
       <div class="grid2">

@@ -10,7 +10,7 @@
   let SLIDE_MS = 4200, IDLE_MS = 60000;   // overwritten from SETTINGS at startup
   let lang = "en", theme = "bright", view = "3d", currentId = null, filterCat = "all";
   const S = () => SETTINGS || {};
-  let idleTimer = null, slideTimer = null, slideIdx = 0, pollTimer = null;
+  let idleTimer = null, slideTimer = null, slideIdx = 0, pollTimer = null, langTimer = null;
 
   const kiosk = document.getElementById("kiosk");
   const screens = { attract: document.getElementById("attract"), main: document.getElementById("main") };
@@ -27,14 +27,27 @@
   const pick = (o) => o ? (cleanField(o[lang]) || cleanField(o.en) || cleanField(o.zh)) : "";
   const nameOf = (k) => pick(k.name) || k.unit;   // a brand name never goes blank
   const mark = (k) => (k.logo ? `<img src="${esc(k.logo)}" alt="">` : esc(k.icon));
+  /* A licensee that has signed but not moved in: the hourly rent-roll sync stores its name
+   * ahead of the access date and switches "occupied" on that day. */
+  const comingSoon = (k) => !!k && !k.occupied && !!(cleanField(k.name && k.name.en) || cleanField(k.name && k.name.zh));
 
-  /* ---------- opening hours ---------- */
+  /* ---------- opening hours: shown only for licensees whose hours staff have entered ---------- */
   const toMin = (hhmm) => { const [h, m] = String(hhmm || "").split(":").map(Number); return (h || 0) * 60 + (m || 0); };
   function nowMin() { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
-  function isOpen(k) { const n = nowMin(), o = toMin(k.hours.open), c = toMin(k.hours.close); return c > o ? (n >= o && n < c) : (n >= o || n < c); }
-  function statusHTML(k) { const open = isOpen(k); return `<span class="status ${open ? "open" : "closed"}">${open ? I18N.open[lang] : I18N.closed[lang]}</span>`; }
+  function isOpen(k) {
+    if (!k.hasHours) return null;
+    const n = nowMin(), o = toMin(k.hours.open), c = toMin(k.hours.close);
+    return c > o ? (n >= o && n < c) : (n >= o || n < c);
+  }
+  function statusHTML(k) {
+    const open = isOpen(k);
+    if (open === null) return "";
+    return `<span class="status ${open ? "open" : "closed"}">${open ? I18N.open[lang] : I18N.closed[lang]}</span>`;
+  }
+  /* the footer range is only worth showing when every kitchen's hours are known: one
+   * kitchen's hours would read as the hours of the whole site */
   function facilityHours() {
-    const occ = occupiedUnits(); if (!occ.length) return "—";
+    const occ = occupiedUnits(); if (!occ.length || occ.some((k) => !k.hasHours)) return "";
     const fmt = (m) => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
     return fmt(Math.min(...occ.map((k) => toMin(k.hours.open)))) + "–" + fmt(Math.max(...occ.map((k) => toMin(k.hours.close))));
   }
@@ -71,13 +84,36 @@
   }
 
   /* ---------- screens ---------- */
-  function show(name) {
+  function show(name, why) {
     if (name === "attract" && window.__swPendingReload) return location.reload();  // a new deploy is waiting — grab it now that we're idle
     for (const s of Object.values(screens)) s.classList.remove("active");
     screens[name].classList.add("active");
-    if (name === "attract") { currentId = null; stopIdle(); startSlides(); }
-    else { stopSlides(); renderMain(); resetIdle(); }
+    if (name === "attract") { currentId = null; stopIdle(); endVisit(why === "idle"); startSlides(); }
+    else {
+      stopLangReset(); stopSlides();
+      buildChips(); buildShopRow(); buildFooter();   // every visitor gets the current list, badges and footer
+      renderMain(); resetIdle();
+    }
   }
+
+  /* ---------- between visitors ----------
+   * The ad screen is the boundary between two people: the category, list position and
+   * collapsed list chosen by one must not greet the next. The language is kept for a while
+   * after Start Over (that reader may touch again) and goes back to the default once the
+   * board has been left alone. */
+  const defaultLang = () => (S().defaultLang === "zh" ? "zh" : "en");
+  function endVisit(leftAlone) {
+    if (filterCat !== "all") { filterCat = "all"; buildChips(); buildShopRow(); }
+    const f = document.getElementById("filters"); if (f) f.scrollLeft = 0;
+    const r = document.getElementById("shoprow"); if (r) r.scrollTop = 0;
+    if (leftAlone) resetLang(); else armLangReset();
+  }
+  function resetLang() { stopLangReset(); if (lang !== defaultLang()) setLang(defaultLang()); }
+  function armLangReset() {
+    stopLangReset();
+    if (lang !== defaultLang()) langTimer = setTimeout(() => { langTimer = null; if (screens.attract.classList.contains("active")) setLang(defaultLang()); }, IDLE_MS);
+  }
+  function stopLangReset() { if (langTimer) { clearTimeout(langTimer); langTimer = null; } }
 
   /* ---------- attract carousel (occupied units only) ---------- */
   function buildSlides() {
@@ -97,19 +133,36 @@
     }).join("");
     primeSlides();
   }
-  function primeSlides() { const s = document.querySelectorAll(".slide"); s.forEach((el, i) => el.classList.toggle("show", i === slideIdx % s.length)); }
-  function startSlides() {
+  function primeSlides() {
     const s = document.querySelectorAll(".slide"); if (!s.length) return;
+    slideIdx %= s.length;
+    s.forEach((el, i) => el.classList.toggle("show", i === slideIdx));
+  }
+  /* the slides are rebuilt on every content refresh, so each tick looks them up afresh
+   * (holding the old list froze the loop on one licensee until the next refresh) */
+  function startSlides() {
     stopSlides(); primeSlides();
-    slideTimer = setInterval(() => { s[slideIdx % s.length].classList.remove("show"); slideIdx = (slideIdx + 1) % s.length; s[slideIdx].classList.add("show"); }, SLIDE_MS);
+    slideTimer = setInterval(() => {
+      const s = document.querySelectorAll(".slide"); if (s.length < 2) return;
+      slideIdx = (slideIdx + 1) % s.length;
+      s.forEach((el, i) => el.classList.toggle("show", i === slideIdx));
+    }, SLIDE_MS);
   }
   function stopSlides() { if (slideTimer) { clearInterval(slideTimer); slideTimer = null; } }
 
-  /* ---------- cuisine filter chips ---------- */
+  /* ---------- cuisine filter chips: only the categories that have a kitchen today ---------- */
+  function chipsInUse() {
+    const used = new Set(occupiedUnits().map((k) => k.cat).filter(Boolean));
+    return CATEGORIES.filter((c) => c.key === "all" || used.has(c.key));
+  }
   function buildChips() {
-    document.getElementById("filters").innerHTML = CATEGORIES.map((c) => `
+    const chips = chipsInUse();
+    if (!chips.some((c) => c.key === filterCat)) filterCat = "all";
+    const row = document.getElementById("filters");
+    row.classList.toggle("is-empty", chips.length < 2);    // "All" on its own filters nothing
+    row.innerHTML = chips.map((c) => `
       <button class="chip ${c.key === filterCat ? "active" : ""}" data-cat="${c.key}"><span class="em">${c.icon}</span>${c.label[lang]}</button>`).join("");
-    document.querySelectorAll("#filters .chip").forEach((b) => b.addEventListener("click", () => setFilter(b.dataset.cat)));
+    row.querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => setFilter(b.dataset.cat)));
   }
   function setFilter(cat) {
     filterCat = cat;
@@ -117,10 +170,12 @@
     // lingers over a "no kitchens" list)
     let deselected = false;
     if (currentId) { const k = byId(currentId); if (k && cat !== "all" && k.cat !== cat) { currentId = null; deselected = true; } }
-    document.querySelectorAll("#filters .chip").forEach((b) => b.classList.toggle("active", b.dataset.cat === cat));
-    // the chips scroll horizontally — keep the active one in view so it never lands off-screen
-    const ac = document.querySelector("#filters .chip.active");
-    if (ac) ac.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    const row = document.getElementById("filters");
+    row.querySelectorAll(".chip").forEach((b) => b.classList.toggle("active", b.dataset.cat === cat));
+    // keep the active chip in view by scrolling the chip row only: scrollIntoView also
+    // scrolled the board itself (overflow:hidden, but still scrollable) sideways
+    const ac = row.querySelector(".chip.active");
+    if (ac) { const a = ac.getBoundingClientRect(), r = row.getBoundingClientRect(); row.scrollBy({ left: a.left + a.width / 2 - (r.left + r.width / 2), behavior: "smooth" }); }
     buildShopRow();
     if (deselected && screens.main.classList.contains("active")) renderMain();
   }
@@ -129,15 +184,20 @@
   function buildShopRow() {
     const list = orderedUnits().filter((k) => k.occupied && (filterCat === "all" || k.cat === filterCat));
     const row = document.getElementById("shoprow");
-    row.innerHTML = list.length ? list.map((k) => { const name = nameOf(k), cuisine = pick(k.cuisine); return `
-      <button class="shopcard ${k.id === currentId ? "sel" : ""}" data-id="${esc(k.id)}" style="--c:${safeColor(k.color)}" aria-label="${esc(name)}${cuisine ? ", " + esc(cuisine) : ""}, ${esc(k.unit)}, ${isOpen(k) ? I18N.open[lang] : I18N.closed[lang]}">
+    row.innerHTML = list.length ? list.map((k) => {
+      const name = nameOf(k), cuisine = pick(k.cuisine), open = isOpen(k);
+      const label = [name, cuisine, k.unit, open === null ? "" : (open ? I18N.open[lang] : I18N.closed[lang])].filter(Boolean).map(esc).join(", ");
+      return `
+      <button class="shopcard ${k.id === currentId ? "sel" : ""}" data-id="${esc(k.id)}" style="--c:${safeColor(k.color)}" aria-label="${label}">
         <span class="unit">${esc(k.unit)}</span>
         <span class="disc${k.logo ? " has-logo" : ""}">${mark(k)}</span>
         <span class="nm">${esc(name)}</span>
         ${cuisine ? `<span class="cz">${esc(cuisine)}</span>` : ""}
         ${statusHTML(k)}
-      </button>`; }).join("") : `<div class="info-empty" style="margin:auto"><div class="t2">${I18N.noneInCat[lang]}</div></div>`;
+      </button>`; }).join("")
+      : `<div class="info-empty" style="margin:auto"><div class="t2">${I18N.noneInCat[lang]}</div>${filterCat !== "all" ? `<button class="chip show-all">${I18N.showAll[lang]}</button>` : ""}</div>`;
     row.querySelectorAll(".shopcard").forEach((c) => c.addEventListener("click", () => selectShop(c.dataset.id)));
+    const all = row.querySelector(".show-all"); if (all) all.addEventListener("click", () => setFilter("all"));
   }
 
   /* ---------- info panel ---------- */
@@ -149,7 +209,7 @@
       return;
     }
     const k = byId(currentId);
-    if (!k.occupied) {
+    if (!k.occupied && !comingSoon(k)) {
       panel.style.setProperty("--c", "#8A93A4");
       panel.innerHTML = `<div class="info-sel">
         <div class="top"><span class="disc">＋</span><div><div class="nm">${I18N.available[lang]}</div><div class="cz">${I18N.availableTag[lang]} · ${esc(k.unit)}</div></div></div>
@@ -157,12 +217,15 @@
       </div>`;
       return;
     }
+    const soon = !k.occupied;
     panel.style.setProperty("--c", safeColor(k.color));
     const cuisine = pick(k.cuisine);
-    panel.innerHTML = `<div class="info-sel">
+    const meta = soon ? `<span class="status soon">${I18N.comingSoon[lang]}</span>`
+      : (k.hasHours ? `${statusHTML(k)}<span class="hours">🕐 ${esc(k.hours.open)}–${esc(k.hours.close)}</span>` : "");
+    panel.innerHTML = `<div class="info-sel${soon ? " soon" : ""}">
       <div class="top"><span class="disc${k.logo ? " has-logo" : ""}">${mark(k)}</span><div><div class="nm">${esc(nameOf(k))}</div>${cuisine ? `<div class="cz">${esc(cuisine)}</div>` : ""}</div></div>
       <div class="unit-big"><span class="lbl">${I18N.unit[lang]}</span><span class="val">${esc(k.unit)}</span></div>
-      <div class="meta-row">${statusHTML(k)}<span class="hours">🕐 ${esc(k.hours.open)}–${esc(k.hours.close)}</span><span class="order-hint">📱 ${I18N.orderAhead[lang]}</span></div>
+      ${meta ? `<div class="meta-row">${meta}</div>` : ""}
       <div class="dirbox"><span class="pin">📍</span><span>${esc(MapKiosk.directions(currentId, lang))}</span></div>
     </div>`;
   }
@@ -172,7 +235,17 @@
     renderInfo();
     document.querySelectorAll(".shopcard").forEach((c) => c.classList.toggle("sel", c.dataset.id === currentId));
   }
-  function selectShop(id) { currentId = id; renderMain(); }
+  /* Tapping the kitchen that is already chosen: an empty unit is let go (there is nothing to
+   * walk to), anything else re-frames its route. */
+  function selectShop(id) {
+    if (id && id === currentId) {
+      const k = byId(id);
+      if (k && !k.occupied && !comingSoon(k)) { currentId = null; renderMain(); return; }
+      if (MapKiosk.refocus) { MapKiosk.refocus(); return; }
+    }
+    currentId = id; renderMain();
+    if (id) document.dispatchEvent(new CustomEvent("kiosk:select", { detail: id }));
+  }
 
   /* ---------- facility footer ---------- */
   function footerHours() {
@@ -183,11 +256,12 @@
     const s = S();
     const name = (s.name || FACILITY.brand).en;   // brand name stays English in all languages
     const help = (s.help || I18N.needHelp)[lang];
+    const n = occupiedUnits().length, hours = footerHours();
     document.getElementById("facilityFoot").innerHTML = `
       <div class="left">
         <span><b>${esc(name)}</b> · ${esc(s.site || FACILITY.site)}</span>
-        <span>🍽️ ${occupiedUnits().length} ${I18N.kitchensWord[lang]}</span>
-        <span>🕐 ${esc(footerHours())}</span>
+        <span>🍽️ ${n} ${(n === 1 ? I18N.kitchenWord : I18N.kitchensWord)[lang]}</span>
+        ${hours ? `<span>🕐 ${esc(hours)}</span>` : ""}
       </div>
       <span class="help">ⓘ ${esc(help)}</span>`;
   }
@@ -199,6 +273,8 @@
     document.querySelectorAll("#langToggle button").forEach((b) => b.classList.toggle("active", b.dataset.lang === l));
     applyStatic(); buildSlides(); buildChips(); buildShopRow(); buildFooter();
     if (screens.main.classList.contains("active")) renderMain();
+    else armLangReset();                       // chosen on the ad screen: goes back to the default if nobody follows up
+    document.dispatchEvent(new CustomEvent("kiosk:lang", { detail: l }));
   }
   function setTheme(t) {
     if (t === theme) return;
@@ -221,14 +297,14 @@
     SLIDE_MS = (S().slideSeconds || 5) * 1000;
     IDLE_MS  = (S().idleSeconds  || 60) * 1000;
     if (currentId && !byId(currentId)) currentId = null;
-    applyStatic();
-    if (screens.attract.classList.contains("active")) buildSlides();
-    if (screens.main.classList.contains("active")) { buildChips(); buildShopRow(); buildFooter(); renderMain(); }
+    // rebuild everything on either screen, so the list and badges are never left stale
+    applyStatic(); buildSlides(); buildChips(); buildShopRow(); buildFooter();
+    if (screens.main.classList.contains("active")) renderMain();
   }
   function startPoll() { if (pollTimer) clearInterval(pollTimer); pollTimer = setInterval(refreshContent, (S().refreshSeconds || CONFIG.refreshSeconds || 180) * 1000); }
 
   /* ---------- idle ---------- */
-  function resetIdle() { if (idleTimer) clearTimeout(idleTimer); idleTimer = setTimeout(() => show("attract"), IDLE_MS); }
+  function resetIdle() { if (idleTimer) clearTimeout(idleTimer); idleTimer = setTimeout(() => show("attract", "idle"), IDLE_MS); }
   function stopIdle() { if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; } }
 
   /* ---------- colour helper ---------- */
@@ -241,7 +317,7 @@
   document.getElementById("viewToggle").addEventListener("click", (e) => { const b = e.target.closest("button[data-view]"); if (b) setView(b.dataset.view); });
   document.getElementById("map").addEventListener("click", (e) => { const g = e.target.closest("[data-uid]"); if (g) selectShop(g.dataset.uid); });
   screens.attract.addEventListener("click", (e) => { if (!e.target.closest(".toggles")) show("main"); });
-  document.getElementById("homeBtn").addEventListener("click", (e) => { e.stopPropagation(); show("attract"); });
+  document.getElementById("homeBtn").addEventListener("click", (e) => { e.stopPropagation(); show("attract", "home"); });
 
   ["pointerdown", "click"].forEach((ev) => document.addEventListener(ev, () => { if (!screens.attract.classList.contains("active")) resetIdle(); }, { passive: true }));
   document.addEventListener("contextmenu", (e) => e.preventDefault());

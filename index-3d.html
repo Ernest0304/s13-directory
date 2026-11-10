@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>KitchenBASE · S13 Kitchen Directory — 3D</title>
   <link rel="icon" type="image/png" href="img/icon-192.png" />
-  <link rel="stylesheet" href="css/styles.css?v=23" />
+  <link rel="stylesheet" href="css/styles.css?v=24" />
   <!-- Three.js r160 is bundled in vendor/three/ (no CDN): map3d.js's dynamic imports resolve here -->
   <script type="importmap">
   { "imports": {
@@ -15,7 +15,7 @@
   </script>
   <style>
     /* 3D map fills the map area (behind the floating rail, like the SVG board) */
-    .main-a .map { padding: 0; display: block; }
+    .main-a .map { padding: 0; display: block; overflow: hidden; }
     /* crisp CSS2D labels floating on the 3D blocks */
     .m3-lab, .m3-svc, .m3-here { pointer-events: none; white-space: nowrap; text-align: center; transform: translateY(-50%); }
     .m3-badge { width: 44px; height: 44px; border-radius: 50%; background: #fff; margin: 0 auto 3px; display: grid; place-items: center; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,.3); }
@@ -145,8 +145,8 @@
   <div id="d3tag">Drag to spin · right-drag / two-finger to move · scroll / pinch to zoom</div>
 
   <script src="js/config.js"></script>
-  <script src="js/data.js?v=20"></script>
-  <script src="js/db.js?v=2"></script>
+  <script src="js/data.js?v=21"></script>
+  <script src="js/db.js?v=3"></script>
   <script>
     // 2D view + night mode are removed on this board: pin day theme + 3D view,
     // overriding any admin defaults (wrapped before app.js consumes loadContent)
@@ -157,8 +157,8 @@
       return r;
     };
   </script>
-  <script src="js/map3d.js?v=13"></script>
-  <script src="js/app.js?v=12"></script>
+  <script src="js/map3d.js?v=14"></script>
+  <script src="js/app.js?v=13"></script>
   <script>
     // Collapsible directory rail — visitors reported it covering the right-hand
     // kitchens (K-11/K-12). Hiding it hands the full width back to the map and
@@ -184,6 +184,8 @@
       btn.addEventListener("click", function (e) { e.stopPropagation(); setRail(!kiosk.classList.contains("rail-hidden")); });
       // keep the label in sync with the EN/中 toggle, and always start a new visitor with the list showing
       document.getElementById("langToggle").addEventListener("click", function () { setTimeout(label, 60); });
+      document.addEventListener("kiosk:lang", label);                       // language reset between visitors
+      document.addEventListener("kiosk:select", function () { if (kiosk.classList.contains("rail-hidden")) setRail(false); });  // the answer lives in the list
       document.getElementById("attract").addEventListener("click", function () { setRail(false); });
       document.getElementById("homeBtn").addEventListener("click", function () { setRail(false); });
       label();

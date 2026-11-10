@@ -1,13 +1,12 @@
 /* =============================================================================
  * data.js — SINGLE SOURCE OF TRUTH for the S13 Kitchen Directory kiosk.
  *
- * Edit this file to update the board:
- *   I18N      — every UI string in English + 中文
- *   KITCHENS  — the 12 brands (bilingual) mapped to their unit on the plan
- *   FLOORPLAN — the designed map geometry, traced from the real S13 layout
+ *   I18N       — every UI string in English + 中文
+ *   SEED_UNITS — the twelve units with no tenants: the start-up fallback only
+ *   FLOORPLAN  — the designed map geometry, traced from the real S13 layout
  *
- * Brands are PLACEHOLDERS; swap in the real S13 tenants (both languages, and a
- * logo at img/<id>.png if you want logos instead of the emoji marks).
+ * The tenants themselves live in the database (edited in admin.html, and kept in
+ * line with the rent roll by the hourly sync), never in this file.
  * ========================================================================== */
 
 const FACILITY = {
@@ -37,43 +36,24 @@ const I18N = {
   open:           { en: "Open",                   zh: "营业中" },
   closed:         { en: "Closed",                 zh: "已打烊" },
   kitchensWord:   { en: "kitchens",               zh: "间厨房" },
+  kitchenWord:    { en: "kitchen",                zh: "间厨房" },
   needHelp:       { en: "Need help? Just ask any staff member.", zh: "需要帮助？请询问任何工作人员。" },
-  orderAhead:     { en: "Order ahead at the counter", zh: "可在柜台提前点餐" },
   noneInCat:      { en: "No kitchens in this category", zh: "此分类暂无厨房" },
+  showAll:        { en: "Show all kitchens",      zh: "显示全部厨房" },
+  comingSoon:     { en: "Coming soon",            zh: "即将入驻" },
   available:      { en: "Available",              zh: "待租" },
   availableTag:   { en: "AVAILABLE",              zh: "招租中" },
   leaseEnquiry:   { en: "This unit is available — enquire at the management office.", zh: "此单元招租中——详情请咨询管理处。" },
 };
 
-/* ---- SEED line-up — bundled default content (used until Supabase is wired,  */
-/* and as the offline fallback). The live content is served from the database  */
-/* via db.js; this is also what supabase/schema.sql seeds the units table with. */
-const SEED_UNITS = [
-  { id: "K03", unit: "K-03", type: "Large",    sqft: 321, color: "#E4572E", icon: "🔥", cat: "western", hours: { open: "11:00", close: "22:00" },
-    name: { en: "Smoke & Barrel", zh: "烟桶烧烤" }, cuisine: { en: "American BBQ", zh: "美式烧烤" }, tagline: { en: "Low and slow, all day", zh: "慢火细烤，全天供应" } },
-  { id: "K04", unit: "K-04", type: "Large",    sqft: 332, color: "#C1440E", icon: "🍕", cat: "western", hours: { open: "11:00", close: "22:30" },
-    name: { en: "Pizza Forno", zh: "火窑披萨" }, cuisine: { en: "Wood-fired Pizza", zh: "柴火披萨" }, tagline: { en: "Blistered in 90 seconds", zh: "九十秒出炉" } },
-  { id: "K05", unit: "K-05", type: "Large",    sqft: 332, color: "#E6A700", icon: "🍗", cat: "western", hours: { open: "11:00", close: "22:00" },
-    name: { en: "Cluck & Co", zh: "咔滋炸鸡" }, cuisine: { en: "Fried Chicken", zh: "炸鸡" }, tagline: { en: "Crunch you can hear", zh: "听得见的酥脆" } },
-  { id: "K06", unit: "K-06", type: "Large",    sqft: 373, color: "#B23A48", icon: "🍔", cat: "western", hours: { open: "11:00", close: "22:00" },
-    name: { en: "Burger Yard", zh: "汉堡庭院" }, cuisine: { en: "Smash Burgers", zh: "现煎汉堡" }, tagline: { en: "Always double stacked", zh: "双层管饱" } },
-  { id: "K07", unit: "K-07", type: "Large",    sqft: 373, color: "#D7263D", icon: "🍛", cat: "world", hours: { open: "11:00", close: "22:00" },
-    name: { en: "Bombay Express", zh: "孟买快线" }, cuisine: { en: "North Indian", zh: "印度菜" }, tagline: { en: "Spice, made to order", zh: "现做香料咖喱" } },
-  { id: "K08", unit: "K-08", type: "Standard", sqft: 219, color: "#F2A900", icon: "🍜", cat: "asian", hours: { open: "10:00", close: "21:30" },
-    name: { en: "Noodle Theory", zh: "面道" }, cuisine: { en: "Asian Noodles", zh: "亚洲面食" }, tagline: { en: "Hand-pulled, served hot", zh: "手工拉面，热气腾腾" } },
-  { id: "K09", unit: "K-09", type: "Standard", sqft: 296, color: "#E08D2F", icon: "🌮", cat: "world", hours: { open: "11:00", close: "22:00" },
-    name: { en: "Taco Libre", zh: "自由塔可" }, cuisine: { en: "Mexican", zh: "墨西哥菜" }, tagline: { en: "Street tacos, no passport", zh: "街头塔可，无需护照" } },
-  { id: "K10", unit: "K-10", type: "Standard", sqft: 189, color: "#2E86AB", icon: "🍣", cat: "asian", hours: { open: "11:30", close: "21:30" },
-    name: { en: "Sushi Den", zh: "寿司殿" }, cuisine: { en: "Japanese", zh: "日本料理" }, tagline: { en: "Rolled to order", zh: "现卷现做" } },
-  { id: "K11", unit: "K-11", type: "Standard", sqft: 191, color: "#C0392B", icon: "🥢", cat: "asian", hours: { open: "11:00", close: "22:00" },
-    name: { en: "Wok This Way", zh: "镬气小厨" }, cuisine: { en: "Chinese", zh: "中式小炒" }, tagline: { en: "Breath of the wok", zh: "十足镬气" } },
-  { id: "K12", unit: "K-12", type: "Standard", sqft: 167, color: "#8C6A4A", icon: "☕", cat: "sweets", hours: { open: "07:30", close: "19:00" },
-    name: { en: "The Daily Grind", zh: "每日研磨" }, cuisine: { en: "Coffee & Brunch", zh: "咖啡早午餐" }, tagline: { en: "Your morning, sorted", zh: "开启美好早晨" } },
-  { id: "K02", unit: "K-02", type: "Cold",     sqft: 272, color: "#3BA776", icon: "🥗", cat: "healthy", hours: { open: "10:00", close: "21:00" },
-    name: { en: "Green Bowl", zh: "轻食碗" }, cuisine: { en: "Salads & Bowls", zh: "沙拉轻食" }, tagline: { en: "Eat the rainbow", zh: "缤纷蔬食" } },
-  { id: "K01", unit: "K-01", type: "Cold",     sqft: 267, color: "#C76B98", icon: "🍰", cat: "sweets", hours: { open: "12:00", close: "23:00" },
-    name: { en: "Sweet Lab", zh: "甜点实验室" }, cuisine: { en: "Desserts", zh: "甜品" }, tagline: { en: "Always save room", zh: "永远留点胃口" } },
-];
+/* ---- FALLBACK line-up — used only when the board starts with no database answer and
+ * no saved copy. It holds no tenants on purpose: twelve empty units are better than a
+ * directory of restaurants that do not exist. (supabase/schema.sql creates the same rows.) */
+const SEED_UNITS = ["K01", "K02", "K03", "K04", "K05", "K06", "K07", "K08", "K09", "K10", "K11", "K12"].map((id) => ({
+  id, unit: id.replace("K", "K-"), occupied: false,
+  name: { en: "", zh: "" }, cuisine: { en: "", zh: "" }, tagline: { en: "", zh: "" },
+  cat: "", color: "#8A93A4", icon: "🍽️", hours: { open: "", close: "" }, hasHours: false,
+}));
 
 /* ---- cuisine filter groups (the chips above the kitchen row) ---- */
 const CATEGORIES = [

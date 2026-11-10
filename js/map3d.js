@@ -56,7 +56,7 @@ const MapKiosk = (function () {
   let ready = false, starting = false, pending = null, cont = null;
   let renderer, lblRenderer, scene, camera, controls, sun, hemi, fill, groundMat, laneMat, svcMat, outMat, shadowMat;
   const blocks = {};   // id -> { mesh, occ, baseY, H, labelEl, col }
-  let hereGrp = null, routeObj = null, endObj = null, routePulses = [], routeCurve = null, routeDrawT0 = 0, routeIdx = 0, raf = 0;
+  let hereGrp = null, routeObj = null, endObj = null, routePulses = [], routeCurve = null, routeDrawT0 = 0, routeIdx = 0, raf = 0, routeKey = "";
   let state = { id: null, lang: "en", theme: "bright", view: "3d" };
   let tween = null, parked = false;
   const easeIO = (t) => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
@@ -82,7 +82,7 @@ const MapKiosk = (function () {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.domElement.style.cssText = "width:100%;height:100%;display:block";
     lblRenderer = new CSS2DRenderer();
-    lblRenderer.domElement.style.cssText = "position:absolute;inset:0;pointer-events:none";
+    lblRenderer.domElement.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden";
     container.innerHTML = "";
     container.style.position = "relative";
     container.appendChild(renderer.domElement);
@@ -185,7 +185,7 @@ const MapKiosk = (function () {
       scene.add(mesh);
       const labelEl = document.createElement("div");
       const lab = new CSS2DObject(labelEl); lab.position.set(0, H / 2 + 8, 0); mesh.add(lab);
-      blocks[id] = { mesh, occ, baseY: H / 2, H, labelEl, col: new THREE.Color(col), lift: null, hx: (u.w - 2 * GAP) / 2, hz: (u.h - 2 * GAP) / 2, fit: "" };
+      blocks[id] = { mesh, lab, occ, baseY: H / 2, H, labelEl, col: new THREE.Color(col), lift: null, hx: (u.w - 2 * GAP) / 2, hz: (u.h - 2 * GAP) / 2, fit: "" };
     }
 
     // you-are-here
@@ -226,7 +226,12 @@ const MapKiosk = (function () {
 
   function mkLabel(html) { const el = document.createElement("div"); el.innerHTML = html; return new CSS2DObject(el); }
   function safeCol(c) { return /^#[0-9a-fA-F]{6}$/.test(c) ? c : "#8A93A4"; }
-  function mark(kk) { return kk && kk.logo ? `<img src="${kk.logo}" alt="">` : (kk && kk.icon ? `<span class="ic">${kk.icon}</span>` : ""); }
+  /* names, icons and logo links come from the database: escape them before they become HTML */
+  const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  function mark(kk) { return kk && kk.logo ? `<img src="${esc(kk.logo)}" alt="">` : (kk && kk.icon ? `<span class="ic">${esc(kk.icon)}</span>` : ""); }
+  /* signed but not moved in: the hourly sync has stored the name, "occupied" is still off */
+  const isSoon = (kk) => !!kk && !kk.occupied && !!((kk.name && (kk.name.en || kk.name.zh)) || "").trim();
+  const hasRoute = (id) => { const kk = kitchenOf(id); return !!kk && (kk.occupied || isSoon(kk)); };
 
   /* Relative luminance (0 black .. 1 white) of a #rrggbb colour. */
   function luminance(hex) {
@@ -240,12 +245,13 @@ const MapKiosk = (function () {
   function blockLabelHTML(id) {
     const kk = kitchenOf(id), occ = !!(kk && kk.occupied), code = id.replace("K", "K-"), lang = state.lang;
     if (occ) {
-      const name = (kk.name && (kk.name[lang] || kk.name.en || kk.name.zh)) || code;   // same current -> en fallback as app.js pick()
+      const name = esc((kk.name && (kk.name[lang] || kk.name.en || kk.name.zh)) || code);   // same current -> en fallback as app.js pick()
       const faded = !!state.id && state.id !== id;
       const light = faded || luminance(safeCol(kk.color)) > LIGHT_ROOF;
       return `<div class="m3-lab${light ? " on-light" : ""}"><div class="m3-badge">${mark(kk)}</div><div class="m3-nm">${name}</div><div class="m3-code">${code}</div></div>`;
     }
-    return `<div class="m3-lab vac"><div class="m3-code big">${code}</div><div class="m3-av">${I18N.available ? I18N.available[lang] : ""}</div></div>`;
+    const note = isSoon(kk) ? I18N.comingSoon[lang] : I18N.available[lang];
+    return `<div class="m3-lab vac${isSoon(kk) ? " soon" : ""}"><div class="m3-code big">${code}</div><div class="m3-av">${note}</div></div>`;
   }
 
   /* ---- label fitting: a name never runs past its own block ----
@@ -314,7 +320,7 @@ const MapKiosk = (function () {
     if (!ready || hidden === railHidden) return;
     railHidden = !!hidden;
     resize();
-    if (state.id && (kitchenOf(state.id) || {}).occupied) focusRoute(state.id); else homeView(true);
+    if (state.id && hasRoute(state.id)) focusRoute(state.id); else homeView(true);
   }
   function homeView(anim) {
     const OFFX = offx();
@@ -336,7 +342,7 @@ const MapKiosk = (function () {
   /* ---- route tube along the corridor ---- */
   function clearRoute() {
     for (const o of [routeObj, endObj, ...routePulses]) if (o) { scene.remove(o); o.geometry.dispose(); o.material.dispose(); }
-    routeObj = endObj = null; routePulses = []; routeCurve = null;
+    routeObj = endObj = null; routePulses = []; routeCurve = null; routeKey = "";
   }
   function buildRoute(id) {
     clearRoute();
@@ -367,6 +373,7 @@ const MapKiosk = (function () {
     state = { id, lang, theme, view };
     if (themeChanged) applyTheme(theme === "bright" ? DAY : NIGHT);
     // labels (content depends on lang)
+    syncBlocks();
     for (const bid in blocks) { blocks[bid].labelEl.innerHTML = blockLabelHTML(bid); blocks[bid].fit = ""; }
     fitDirty = true;
     for (const o of (scene._svc || [])) o.userData.lab.element.innerHTML = `<div class="m3-svc${isOutdoor(o.userData.svcKey) ? " out" : ""}">${I18N[o.userData.svcKey][lang]}</div>`;
@@ -375,14 +382,14 @@ const MapKiosk = (function () {
     for (const bid in blocks) { const b = blocks[bid];
       b.mesh.material.emissive.setHex(0x000000);
       b.mesh.material.opacity = (!id || bid === id) ? 1 : 0.5;
-      liftTo(b, b.baseY);
+      liftTo(b, bid === id ? b.baseY + 26 : b.baseY);
     }
     if (id && blocks[id]) {
       const b = blocks[id];
       b.mesh.material.emissive.copy(b.mesh.material.color).multiplyScalar(.34);
-      liftTo(b, b.baseY + 26);
-      if ((kitchenOf(id) || {}).occupied) {
-        buildRoute(id);
+      if (hasRoute(id)) {
+        const key = id + "|" + b.mesh.material.color.getHexString();
+        if (!routeObj || routeKey !== key) { buildRoute(id); routeKey = key; }
         if (idChanged || viewChanged) focusRoute(id);   // flatten to top-down over the route
       } else {
         clearRoute();                                    // vacant: highlight only, keep the browse angle
@@ -390,7 +397,27 @@ const MapKiosk = (function () {
       }
     } else { clearRoute(); if (idChanged || viewChanged) homeView(true); }
   }
-  function liftTo(b, to) { if (Math.abs(b.mesh.position.y - to) < .5) return; b.lift = { from: b.mesh.position.y, to, s: performance.now() }; }
+  function liftTo(b, to) {
+    if (b.lift && Math.abs(b.lift.to - to) < .5) return;                       // already heading there
+    if (Math.abs(b.mesh.position.y - to) < .5) { b.lift = null; return; }
+    b.lift = { from: b.mesh.position.y, to, s: performance.now() };
+  }
+  function syncBlocks() {
+    for (const id in blocks) {
+      const b = blocks[id], kk = kitchenOf(id), occ = !!(kk && kk.occupied);
+      const col = occ ? safeCol(kk.color) : (state.theme === "bright" ? DAY.vac : NIGHT.vac);
+      if (occ !== b.occ) {
+        const u = FP.units[id], H = occ ? H_OCC : H_VAC;
+        b.mesh.geometry.dispose();
+        b.mesh.geometry = new RoundedBoxGeometry(u.w - 2 * GAP, H, u.h - 2 * GAP, 4, 7);
+        const lifted = b.mesh.position.y - b.baseY;
+        b.occ = occ; b.H = H; b.baseY = H / 2; b.lift = null;
+        b.mesh.position.y = b.baseY + lifted;
+        b.lab.position.y = H / 2 + 8;
+      }
+      if (b.col.getHex() !== new THREE.Color(col).getHex()) { b.col.set(col); b.mesh.material.color.set(col); }
+    }
+  }
 
   /* ---- render loop (pauses when the board isn't on the main screen) ---- */
   function loop() {
@@ -424,5 +451,6 @@ const MapKiosk = (function () {
     if (container !== cont) { cont = container; resize(); }
     apply(id, lang, theme, view);
   }
-  return { render, directions, setRailHidden };
+  function refocus() { if (!ready) return; if (state.id && hasRoute(state.id)) focusRoute(state.id); else homeView(true); }
+  return { render, directions, setRailHidden, refocus };
 })();

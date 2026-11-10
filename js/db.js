@@ -2,8 +2,8 @@
  * db.js — content layer. The kiosk calls loadContent(); the admin page uses the
  * signIn / saveUnit / uploadAsset helpers. Uses the Supabase REST API directly
  * (no library), so the kiosk stays dependency-free and keeps a localStorage
- * cache to survive network drops. Falls back to the bundled SEED_UNITS until a
- * Supabase project is configured in config.js.
+ * cache to survive network drops. With no answer and no cache it falls back to the
+ * bundled SEED_UNITS (twelve empty units).
  * ========================================================================== */
 
 let KITCHENS = [];                 // live units, consumed by app.js + map.js
@@ -68,15 +68,18 @@ function facilityToRow(s) {
   };
 }
 
-/* row (DB) <-> unit (front-end) */
+/* row (DB) <-> unit (front-end)
+ * Unknown stays unknown: no category means "only under All", and no opening hours means
+ * the board shows none (it used to invent 10:00-22:00 and an Open/Closed badge). */
 function fromRow(r) {
+  const open = r.hours_open || "", close = r.hours_close || "";
   return {
     id: r.unit_code.replace("-", ""), unit: r.unit_code, occupied: !!r.occupied,
     name: { en: r.name_en || "", zh: r.name_zh || "" },
     cuisine: { en: r.cuisine_en || "", zh: r.cuisine_zh || "" },
     tagline: { en: r.tagline_en || "", zh: r.tagline_zh || "" },
-    cat: r.category || "world", color: r.color || "#8A93A4", icon: r.icon || "🍽️",
-    hours: { open: r.hours_open || "10:00", close: r.hours_close || "22:00" },
+    cat: r.category || "", color: r.color || "#8A93A4", icon: r.icon || "🍽️",
+    hours: { open, close }, hasHours: !!(open && close),
     logo: r.logo_url || null, adBg: r.ad_bg_url || null,
   };
 }
@@ -84,7 +87,7 @@ function toRow(u) {
   return {
     occupied: u.occupied, name_en: u.name.en, name_zh: u.name.zh,
     cuisine_en: u.cuisine.en, cuisine_zh: u.cuisine.zh, tagline_en: u.tagline.en, tagline_zh: u.tagline.zh,
-    category: u.cat, color: u.color, icon: u.icon, hours_open: u.hours.open, hours_close: u.hours.close,
+    category: u.cat || null, color: u.color, icon: u.icon, hours_open: u.hours.open || null, hours_close: u.hours.close || null,
     logo_url: u.logo || null, ad_bg_url: u.adBg || null, updated_at: new Date().toISOString(),
   };
 }
@@ -97,7 +100,11 @@ async function loadContent() {
     try {
       const res = await fetch(`${CONFIG.supabaseUrl}/rest/v1/units?select=*&order=sort`, { headers: sbHeaders() });
       if (!res.ok) throw new Error("HTTP " + res.status);
-      units = (await res.json()).map(fromRow);
+      const rows = await res.json();
+      // the table always holds the twelve units: an empty answer is a fault, not "no kitchens",
+      // so keep the last good copy instead of overwriting it
+      if (!Array.isArray(rows) || !rows.length) throw new Error("empty answer");
+      units = rows.map(fromRow);
       localStorage.setItem(CACHE_KEY, JSON.stringify(units));
     } catch (e) { console.warn("[db] live units fetch failed, using cache/seed:", e.message); }
     try {
