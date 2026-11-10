@@ -4,7 +4,8 @@
  * Exposes the SAME api as the SVG map.js:  MapKiosk.render(container,id,lang,theme,view)
  * and MapKiosk.directions(id,lang).  app.js / db.js / data.js / the whole board
  * shell (attract, browse rail, directory, idle, toggles) are UNCHANGED — only the
- * #map area is rendered in 3D here. Three.js loads from CDN (needs internet).
+ * #map area is rendered in 3D here. Three.js is bundled in vendor/three/ (see the
+ * import map in index-3d.html); nothing is fetched from a CDN.
  * ========================================================================== */
 const MapKiosk = (function () {
   const FP = FLOORPLAN;

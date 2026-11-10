@@ -6,11 +6,11 @@
   <title>KitchenBASE · S13 Kitchen Directory — 3D</title>
   <link rel="icon" type="image/png" href="img/icon-192.png" />
   <link rel="stylesheet" href="css/styles.css?v=23" />
-  <!-- Three.js resolved for map3d.js's dynamic imports -->
+  <!-- Three.js r160 is bundled in vendor/three/ (no CDN): map3d.js's dynamic imports resolve here -->
   <script type="importmap">
   { "imports": {
-    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    "three": "./vendor/three/three.module.js",
+    "three/addons/": "./vendor/three/addons/"
   } }
   </script>
   <style>
