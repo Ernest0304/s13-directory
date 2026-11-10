@@ -1,6 +1,6 @@
-# Smart City Kitchens — S13 Kitchen Directory Board
+# KitchenBASE — S13 Kitchen Directory Board
 
-A 24/7 unattended **touchscreen wayfinding directory** for **Smart City Kitchens S13**
+A 24/7 unattended **touchscreen wayfinding directory** for **KitchenBASE S13**
 (JTC Bedok Food City, 1550 Bedok North Ave 4, #04-21, Singapore 489950). Customers and
 delivery riders tap to find a kitchen brand and see the route from "You Are Here".
 

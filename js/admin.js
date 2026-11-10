@@ -180,8 +180,8 @@
     $("tab-site").innerHTML = `
       <h3>Identity</h3>
       <div class="grid2">
-        <label>Facility name (EN)<input id="s_name_en" value="${esc(s.name.en)}" placeholder="SMART CITY KITCHENS"/></label>
-        <label>名称 (中)<input id="s_name_zh" value="${esc(s.name.zh)}" placeholder="智慧城市厨房"/></label>
+        <label>Facility name (EN)<input id="s_name_en" value="${esc(s.name.en)}" placeholder="KitchenBASE"/></label>
+        <label>名称 (中)<input id="s_name_zh" value="${esc(s.name.zh)}" placeholder="KitchenBASE"/></label>
         <label>Subtitle (EN)<input id="s_sub_en" value="${esc(s.subtitle.en)}" placeholder="Kitchen Directory"/></label>
         <label>副标题 (中)<input id="s_sub_zh" value="${esc(s.subtitle.zh)}" placeholder="厨房指南"/></label>
         <label>Address (EN)<input id="s_addr_en" value="${esc(s.address.en)}" placeholder="Bedok Food City"/></label>

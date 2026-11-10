@@ -1,6 +1,6 @@
 @charset "UTF-8";
 /* =============================================================================
- * styles.css — Smart City Kitchens · S13 Kitchen Directory
+ * styles.css — KitchenBASE · S13 Kitchen Directory
  * Landscape mall-directory kiosk (also degrades to portrait). Two live themes:
  * data-theme="dark" (premium) and data-theme="bright" (mall). Bilingual EN / 中.
  * ========================================================================== */
@@ -62,7 +62,7 @@ h1, h2, h3 { letter-spacing: -.02em; }
   background: #ffffff; box-shadow: 0 8px 22px -10px rgba(0,0,0,.4), inset 0 0 0 1px rgba(0,0,0,.06); }
 .wordmark .mark img { max-width: 70%; max-height: 72%; width: auto; height: auto; object-fit: contain; display: block; }
 .wordmark .wm-text { display: flex; flex-direction: column; line-height: 1.12; }
-.wordmark .wm-text b { font-weight: 800; letter-spacing: .12em; font-size: clamp(12px, 1.3vw, 19px); }
+.wordmark .wm-text b { font-weight: 800; letter-spacing: .01em; font-size: clamp(12px, 1.3vw, 19px); }
 .wordmark .wm-text i { font-style: normal; color: var(--muted); font-weight: 500; letter-spacing: .03em; font-size: clamp(10px, 1vw, 14px); }
 .wm-addr { font-style: normal; display: block; margin-top: 5px; font-size: clamp(10px, .95vw, 13px); font-weight: 500; color: var(--muted); line-height: 1.35; letter-spacing: .01em; }
 .wordmark.sm .mark { width: clamp(40px, 3.4vw, 52px); height: clamp(40px, 3.4vw, 52px); }

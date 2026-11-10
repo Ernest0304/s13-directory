@@ -11,7 +11,7 @@
  * ========================================================================== */
 
 const FACILITY = {
-  brand:   { en: "SMART CITY KITCHENS", zh: "智慧城市厨房" },
+  brand:   { en: "KitchenBASE", zh: "KitchenBASE" },
   site:    "S13",
   address: { en: "Bedok Food City", zh: "勿洛美食城" },
 };

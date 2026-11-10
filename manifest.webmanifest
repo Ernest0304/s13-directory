@@ -1,7 +1,7 @@
 {
-  "name": "Smart City Kitchens — S13 Directory",
+  "name": "KitchenBASE — S13 Directory",
   "short_name": "S13 Directory",
-  "description": "Touchscreen kitchen wayfinding directory for Smart City Kitchens S13 (JTC Bedok Food City).",
+  "description": "Touchscreen kitchen wayfinding directory for KitchenBASE S13 (JTC Bedok Food City).",
   "lang": "en",
   "dir": "ltr",
   "start_url": "./",
