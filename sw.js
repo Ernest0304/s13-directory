@@ -21,7 +21,7 @@
  * (Keep bumping ?v=N in index.html too — it busts the HTTP/CDN layer.)
  * ========================================================================== */
 
-const SW_VERSION = "s13-v31";
+const SW_VERSION = "s13-v32";
 const PRECACHE = "s13-precache-" + SW_VERSION; // app shell, purged on version bump
 const RUNTIME  = "s13-runtime";                // live content + logos, kept across updates
 

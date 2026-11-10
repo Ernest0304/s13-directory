@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>KitchenBASE · S13 Kitchen Directory — 3D</title>
   <link rel="icon" type="image/png" href="img/icon-192.png" />
-  <link rel="stylesheet" href="css/styles.css?v=25" />
+  <link rel="stylesheet" href="css/styles.css?v=26" />
   <!-- Three.js r160 is bundled in vendor/three/ (no CDN): map3d.js's dynamic imports resolve here -->
   <script type="importmap">
   { "imports": {
@@ -63,8 +63,7 @@
       display: grid; place-items: center; cursor: pointer; font: inherit; color: var(--muted);
       width: clamp(30px,2.4vw,38px); height: clamp(84px,11vh,124px); padding: 0;
       background: var(--float); border: 1px solid var(--float-brd); border-right: none;
-      -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3);
-      border-radius: 14px 0 0 14px; box-shadow: -6px 0 20px -8px rgba(28,45,80,.3);
+      border-radius: 12px 0 0 12px; box-shadow: none;
       transition: right .42s cubic-bezier(.22,.61,.36,1), background .18s, color .18s, transform .18s; }
     /* invisible finger zone — the handle reads narrow but is comfortably tappable */
     .rail-toggle::before { content: ""; position: absolute; inset: -16px -26px; }
@@ -85,8 +84,7 @@
     .kiosk.rail-hidden .map-tools { left: 50%; }
     .map-tools > * { grid-area: 1 / 1; transition: opacity .25s ease, transform .25s ease; }
     .map-hint { color: var(--muted); background: var(--float); border: 1px solid var(--float-brd); border-radius: 999px;
-      padding: .5em 1.1em; font-size: clamp(13px, 1.1vw, 17px); font-weight: 600; white-space: nowrap;
-      -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+      padding: .5em 1.1em; font-size: clamp(13px, 1.1vw, 17px); font-weight: 600; white-space: nowrap; }
     .recentre { pointer-events: auto; font: inherit; font-weight: 800; font-size: clamp(16px, 1.35vw, 21px); cursor: pointer;
       display: inline-flex; align-items: center; gap: .5em; color: #fff; background: #16181d; border: 0; border-radius: 999px;
       min-height: 56px; padding: 0 1.4em; box-shadow: 0 10px 26px -8px rgba(0,0,0,.45); opacity: 0; transform: translateY(8px); visibility: hidden; }
