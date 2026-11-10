@@ -41,6 +41,8 @@ const I18N = {
   noneInCat:      { en: "No kitchens in this category", zh: "此分类暂无厨房" },
   showAll:        { en: "Show all kitchens",      zh: "显示全部厨房" },
   comingSoon:     { en: "Coming soon",            zh: "即将入驻" },
+  mapHint:        { en: "Tap a kitchen to see the way · drag to turn the map", zh: "点击厨房查看路线 · 拖动可旋转地图" },
+  recentre:       { en: "Reset map",              zh: "地图复位" },
   available:      { en: "Available",              zh: "待租" },
   availableTag:   { en: "AVAILABLE",              zh: "招租中" },
   leaseEnquiry:   { en: "This unit is available — enquire at the management office.", zh: "此单元招租中——详情请咨询管理处。" },

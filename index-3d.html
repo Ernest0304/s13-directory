@@ -18,34 +18,35 @@
     .main-a .map { padding: 0; display: block; overflow: hidden; }
     /* crisp CSS2D labels floating on the 3D blocks */
     .m3-lab, .m3-svc, .m3-here { pointer-events: none; white-space: nowrap; text-align: center; transform: translateY(-50%); }
-    .m3-badge { width: 44px; height: 44px; border-radius: 50%; background: #fff; margin: 0 auto 3px; display: grid; place-items: center; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,.3); }
+    .m3-badge { width: calc(44px * var(--m3k, 1)); height: calc(44px * var(--m3k, 1)); border-radius: 50%; background: #fff; margin: 0 auto 3px; display: grid; place-items: center; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,.3); }
     .m3-badge img { width: 82%; height: 82%; object-fit: contain; }
-    .m3-badge .ic { font-size: 23px; }
-    .m3-nm { color: #fff; font-weight: 800; font-size: 15px; line-height: 1.05; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
-    .m3-code { color: #fff; font-weight: 700; font-size: 11px; opacity: .82; letter-spacing: .05em; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
+    .m3-badge .ic { font-size: calc(23px * var(--m3k, 1)); }
+    .m3-nm { color: #fff; font-weight: 800; font-size: calc(15px * var(--m3k, 1)); line-height: 1.05; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
+    .m3-code { color: #fff; font-weight: 700; font-size: calc(12px * var(--m3k, 1)); opacity: .86; letter-spacing: .05em; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
     /* a name stays inside its own block: map3d.js sets max-width + data-fit from the block's on-screen width */
     .m3-lab { white-space: normal; }
     /* occupied blocks: the badge floats above the roof centre and the name hangs below it, so the
        text always sits on the block's own colour (roof, then front wall) instead of the white floor behind */
-    .m3-lab:not(.vac) { transform: translateY(calc(50% - 47px)); }
+    .m3-lab:not(.vac) { transform: translateY(calc(50% - 47px * var(--m3k, 1))); }
     .m3-lab .m3-code, .m3-lab .m3-av { white-space: nowrap; }
     .m3-nm { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: break-word; text-wrap: balance; padding-bottom: 1px; }
-    .m3-lab[data-fit="m"] .m3-nm { font-size: 13px; }
-    .m3-lab[data-fit="s"] .m3-nm { font-size: 12px; }
+    .m3-lab[data-fit="m"] .m3-nm { font-size: calc(13px * var(--m3k, 1)); }
+    .m3-lab[data-fit="s"] .m3-nm { font-size: calc(12px * var(--m3k, 1)); }
     .m3-lab[data-fit="x"] .m3-nm { display: none; }
     /* bright roofs (amber, beige) and blocks faded behind a selection: dark text, light halo */
     .m3-lab.on-light .m3-nm, .m3-lab.on-light .m3-code { color: #1b2433; text-shadow: 0 1px 5px rgba(255,255,255,.85), 0 0 2px rgba(255,255,255,.6); }
     .m3-lab.on-light .m3-code { opacity: .78; }
     .m3-lab.vac { opacity: .92; }
-    .m3-code.big { font-size: 16px; opacity: .9; }
-    .m3-av { color: #fff; font-size: 10px; opacity: .68; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
-    .m3-svc { color: #eaf0f7; font-size: 11px; font-weight: 600; text-shadow: 0 1px 4px rgba(0,0,0,.55); }
+    .m3-code.big { font-size: calc(17px * var(--m3k, 1)); opacity: .92; }
+    .m3-av { color: #fff; font-size: calc(11px * var(--m3k, 1)); opacity: .78; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
+    .m3-svc { color: #eaf0f7; font-size: calc(12px * var(--m3k, 1)); font-weight: 600; text-shadow: 0 1px 4px rgba(0,0,0,.55); }
     .m3-svc.out { color: #f4ead9; font-style: italic; }
     /* day palette: vacant + service blocks are near-white — labels go ink, not white */
     [data-theme="bright"] .m3-svc { color: #7c8697; text-shadow: none; }
     [data-theme="bright"] .m3-svc.out { color: #a89a80; }
-    [data-theme="bright"] .m3-lab.vac .m3-code, [data-theme="bright"] .m3-lab.vac .m3-av { color: #6b7789; text-shadow: none; }
-    .m3-here { color: #0fae84; font-weight: 800; font-size: 12px; letter-spacing: .04em; text-shadow: 0 2px 8px rgba(255,255,255,.7); }
+    [data-theme="bright"] .m3-lab.vac .m3-code, [data-theme="bright"] .m3-lab.vac .m3-av { color: #5b6678; text-shadow: none; }
+    [data-theme="bright"] .m3-lab.vac.sel .m3-code, [data-theme="bright"] .m3-lab.vac.sel .m3-av { color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.45); }
+    .m3-here { color: #fff; background: #16181d; border-radius: 999px; padding: .38em .8em; font-weight: 800; font-size: calc(13px * var(--m3k, 1)); letter-spacing: .05em; box-shadow: 0 4px 14px rgba(0,0,0,.28); }
     /* 2D + night mode removed on the final 3D board (containers kept for app.js wiring) */
     #viewToggle, #themeToggle { display: none; }
 
@@ -75,10 +76,23 @@
     .kiosk.rail-hidden .rail-toggle { right: 0; border-radius: 14px 0 0 14px; }
     .kiosk.rail-hidden .rail-toggle .rt-ico { transform: rotate(180deg); }
     @media (prefers-reduced-motion: reduce) { .rail-toggle, .rail-toggle .rt-ico, .main-a .browse-float { transition: none; } }
-    /* small preview tag */
-    #d3tag { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 60;
-      background: rgba(20,24,33,.72); color: #fff; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 999px;
-      backdrop-filter: blur(10px); font-family: var(--font); }
+    /* map tools: a touch hint, replaced by a Reset-map button once the visitor has moved the map */
+    .map-tools { position: absolute; z-index: 25; bottom: clamp(66px, 8.5vh, 100px); transform: translateX(-50%);
+      left: calc(50% - (clamp(278px,28vw,440px) + clamp(14px,1.6vw,30px)) / 2); transition: left .42s cubic-bezier(.22,.61,.36,1);
+      display: grid; place-items: center; pointer-events: none; }
+    .kiosk.rail-hidden .map-tools { left: 50%; }
+    .map-tools > * { grid-area: 1 / 1; transition: opacity .25s ease, transform .25s ease; }
+    .map-hint { color: var(--muted); background: var(--float); border: 1px solid var(--float-brd); border-radius: 999px;
+      padding: .5em 1.1em; font-size: clamp(13px, 1.1vw, 17px); font-weight: 600; white-space: nowrap;
+      -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+    .recentre { pointer-events: auto; font: inherit; font-weight: 800; font-size: clamp(16px, 1.35vw, 21px); cursor: pointer;
+      display: inline-flex; align-items: center; gap: .5em; color: #fff; background: #16181d; border: 0; border-radius: 999px;
+      min-height: 56px; padding: 0 1.4em; box-shadow: 0 10px 26px -8px rgba(0,0,0,.45); opacity: 0; transform: translateY(8px); visibility: hidden; }
+    .recentre:active { transform: scale(.96); }
+    .recentre svg { width: 1.15em; height: 1.15em; }
+    .kiosk.map-moved .recentre { opacity: 1; transform: none; visibility: visible; }
+    .kiosk.map-moved .map-hint, .kiosk.map-sel .map-hint { opacity: 0; transform: translateY(8px); }
+    @media (prefers-reduced-motion: reduce) { .map-tools, .map-tools > * { transition: none; } }
   </style>
 </head>
 <body>
@@ -138,14 +152,21 @@
         <span class="rt-txt" data-i18n-rail>Hide list</span>
       </button>
 
+      <div class="map-tools" id="mapTools">
+        <span class="map-hint" data-i18n="mapHint">Tap a kitchen to see the way · drag to turn the map</span>
+        <button class="recentre" id="recentreBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+          <span data-i18n="recentre">Reset map</span>
+        </button>
+      </div>
+
       <footer class="facility-foot" id="facilityFoot"></footer>
     </section>
 
   </div>
-  <div id="d3tag">Drag to spin · right-drag / two-finger to move · scroll / pinch to zoom</div>
 
   <script src="js/config.js"></script>
-  <script src="js/data.js?v=21"></script>
+  <script src="js/data.js?v=22"></script>
   <script src="js/db.js?v=3"></script>
   <script>
     // 2D view + night mode are removed on this board: pin day theme + 3D view,
@@ -157,7 +178,7 @@
       return r;
     };
   </script>
-  <script src="js/map3d.js?v=14"></script>
+  <script src="js/map3d.js?v=15"></script>
   <script src="js/app.js?v=13"></script>
   <script>
     // Collapsible directory rail — visitors reported it covering the right-hand
@@ -188,6 +209,7 @@
       document.addEventListener("kiosk:select", function () { if (kiosk.classList.contains("rail-hidden")) setRail(false); });  // the answer lives in the list
       document.getElementById("attract").addEventListener("click", function () { setRail(false); });
       document.getElementById("homeBtn").addEventListener("click", function () { setRail(false); });
+      document.getElementById("recentreBtn").addEventListener("click", function (e) { e.stopPropagation(); if (typeof MapKiosk !== "undefined" && MapKiosk.refocus) MapKiosk.refocus(); });
       label();
     })();
   </script>

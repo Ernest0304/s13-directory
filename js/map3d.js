@@ -95,8 +95,9 @@ const MapKiosk = (function () {
     controls.enableDamping = true; controls.dampingFactor = .09;
     controls.enablePan = true; controls.screenSpacePanning = false;
     controls.zoomSpeed = 2;
-    controls.minDistance = 420; controls.maxDistance = 2600;
-    controls.maxPolarAngle = Math.PI * 0.49;
+    controls.minDistance = 420; controls.maxDistance = 1650;          // route views need up to ~1450
+    controls.minPolarAngle = 0; controls.maxPolarAngle = 65 * Math.PI / 180;   // top-down .. a little past the 57 deg home view, never edge-on
+    controls.maxTargetRadius = 560;                                    // pans keep the plan on screen (K-12's route view needs ~460)
     // free orbit EVERYWHERE — browse and after selecting (the lab-page feel Ernest wants):
     // drag = spin/tilt the board, right-drag / two-finger = move, scroll / pinch = zoom
     controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
@@ -204,17 +205,26 @@ const MapKiosk = (function () {
     proxyWrap.style.display = "none";
     for (const uid of Object.keys(FP.units)) { const b = document.createElement("button"); b.dataset.uid = uid; proxyWrap.appendChild(b); }
     container.appendChild(proxyWrap);
-    const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(); let down = null;
-    renderer.domElement.addEventListener("pointerdown", e => down = [e.clientX, e.clientY]);
+    const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(); let down = null, fingers = 0; const pressed = new Set();
+    const pick = (id) => { const p = proxyWrap.querySelector('[data-uid="' + id + '"]'); if (p) p.click(); };
+    renderer.domElement.addEventListener("pointerdown", e => {
+      pressed.add(e.pointerId);
+      if (pressed.size === 1) { down = [e.clientX, e.clientY]; fingers = 1; } else fingers = Math.max(fingers, pressed.size);
+    });
+    renderer.domElement.addEventListener("pointercancel", e => { pressed.delete(e.pointerId); down = null; });
     renderer.domElement.addEventListener("pointerup", e => {
-      if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 6) return;
+      pressed.delete(e.pointerId);
+      if (!down || fingers > 1 || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 14) return;
+      const lab = labelAt(e.clientX, e.clientY);
+      if (lab) return pick(lab);
       const r = renderer.domElement.getBoundingClientRect();
       ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
       ray.setFromCamera(ndc, camera);
       const hit = ray.intersectObjects(Object.values(blocks).map(b => b.mesh))[0];
-      if (hit) { const p = proxyWrap.querySelector('[data-uid="' + hit.object.userData.id + '"]'); if (p) p.click(); }
+      if (hit) pick(hit.object.userData.id);
     });
 
+    controls.cursor.set(offx(), 0, 30);
     addEventListener("resize", resize); resize();
     applyTheme(DAY, true);
     homeView(false);
@@ -222,6 +232,21 @@ const MapKiosk = (function () {
     if (/[?&]debug/.test(location.search)) window.__m3 = { camera, controls, scene, wx, wz, get route() { return { routeObj, routeIdx, drawn: routeObj ? routeObj.geometry.drawRange.count : 0, pulses: routePulses.filter(p => p.visible).length }; } };
     loop();
     if (pending) { const p = pending; pending = null; apply(p.id, p.lang, p.theme, p.view); }
+  }
+
+  /* the label (badge, name or unit code) under a point, nearest centre first; hidden parts have no box */
+  function labelAt(x, y) {
+    let found = null, best = Infinity;
+    for (const id in blocks) {
+      const lab = blocks[id].labelEl.firstElementChild; if (!lab) continue;
+      for (const part of lab.children) {
+        const r = part.getBoundingClientRect(); if (!r.width || !r.height) continue;
+        if (x < r.left - 6 || x > r.right + 6 || y < r.top - 6 || y > r.bottom + 6) continue;
+        const d = Math.hypot(x - (r.left + r.right) / 2, y - (r.top + r.bottom) / 2);
+        if (d < best) { best = d; found = id; }
+      }
+    }
+    return found;
   }
 
   function mkLabel(html) { const el = document.createElement("div"); el.innerHTML = html; return new CSS2DObject(el); }
@@ -246,12 +271,12 @@ const MapKiosk = (function () {
     const kk = kitchenOf(id), occ = !!(kk && kk.occupied), code = id.replace("K", "K-"), lang = state.lang;
     if (occ) {
       const name = esc((kk.name && (kk.name[lang] || kk.name.en || kk.name.zh)) || code);   // same current -> en fallback as app.js pick()
-      const faded = !!state.id && state.id !== id;
+      const faded = !!state.id && state.id !== id && hasRoute(state.id);
       const light = faded || luminance(safeCol(kk.color)) > LIGHT_ROOF;
       return `<div class="m3-lab${light ? " on-light" : ""}"><div class="m3-badge">${mark(kk)}</div><div class="m3-nm">${name}</div><div class="m3-code">${code}</div></div>`;
     }
     const note = isSoon(kk) ? I18N.comingSoon[lang] : I18N.available[lang];
-    return `<div class="m3-lab vac${isSoon(kk) ? " soon" : ""}"><div class="m3-code big">${code}</div><div class="m3-av">${note}</div></div>`;
+    return `<div class="m3-lab vac${isSoon(kk) ? " soon" : ""}${state.id === id ? " sel" : ""}"><div class="m3-code big">${code}</div><div class="m3-av">${note}</div></div>`;
   }
 
   /* ---- label fitting: a name never runs past its own block ----
@@ -276,10 +301,10 @@ const MapKiosk = (function () {
       if (!seen) continue;                                   // behind the camera: leave it as it was
       const room = Math.max(0, Math.round((hi - lo - 14) / 4) * 4);   // 4 px steps: no restyling on every tiny move
       // a roof seen almost edge-on (the map tilted flat) has no room for a name either
-      const fit = yhi - ylo < 30 ? "x" : room >= 150 ? "l" : room >= 112 ? "m" : room >= 84 ? "s" : "x";
+      const fit = yhi - ylo < 30 * labK ? "x" : room >= 150 * labK ? "l" : room >= 112 * labK ? "m" : room >= 84 * labK ? "s" : "x";
       const key = fit + room;
       if (key === b.fit && lab.dataset.fit) continue;
-      b.fit = key; lab.dataset.fit = fit; lab.style.maxWidth = Math.max(room, 60) + "px";
+      b.fit = key; lab.dataset.fit = fit; lab.style.maxWidth = Math.max(room, 60 * labK) + "px";
     }
   }
   function fitLabelsIfMoved() {
@@ -290,10 +315,15 @@ const MapKiosk = (function () {
     fitLabels();
   }
 
+  /* label sizes are designed for a 1080-px-high screen; a taller or shorter CSS viewport
+   * (another panel or density setting) scales them in proportion */
+  let labK = 1;
   function resize() {
     if (!cont) return; const w = cont.clientWidth || 1, h = cont.clientHeight || 1;
     camera.aspect = w / h; camera.updateProjectionMatrix();
     renderer.setSize(w, h); lblRenderer.setSize(w, h);
+    labK = Math.min(2, Math.max(.8, h / 1080));
+    cont.style.setProperty("--m3k", labK.toFixed(3));
     fitDirty = true;
   }
 
@@ -310,7 +340,10 @@ const MapKiosk = (function () {
   const isSel = (id) => state.id === id;
 
   /* ---- camera framing ---- */
-  function flyTo(pos, tgt, ms) { tween = { p0: camera.position.clone(), p1: pos, t0: controls.target.clone(), t1: tgt, s: performance.now(), ms: ms || 950 }; }
+  let canon = null, moved = false;
+  function setCanon(pos, tgt) { canon = { pos: pos.clone(), tgt: tgt.clone() }; setMoved(false); }
+  function setMoved(m) { if (m === moved) return; moved = m; const k = document.getElementById("kiosk"); if (k) k.classList.toggle("map-moved", m); }
+  function flyTo(pos, tgt, ms) { setCanon(pos, tgt); tween = { p0: camera.position.clone(), p1: pos, t0: controls.target.clone(), t1: tgt, s: performance.now(), ms: ms || 950 }; }
   /* Shift the plan right so the browse rail doesn't crowd it — but when the rail
    * is collapsed the map owns the full width, so the offset drops to 0. */
   const RAIL_OFFX = 135;
@@ -319,6 +352,7 @@ const MapKiosk = (function () {
   function setRailHidden(hidden) {
     if (!ready || hidden === railHidden) return;
     railHidden = !!hidden;
+    controls.cursor.set(offx(), 0, 30);                                  // the pan limit follows the plan's centre
     resize();
     if (state.id && hasRoute(state.id)) focusRoute(state.id); else homeView(true);
   }
@@ -326,7 +360,7 @@ const MapKiosk = (function () {
     const OFFX = offx();
     const pos = state.view === "2d" ? new THREE.Vector3(OFFX, 1500, 1) : new THREE.Vector3(30 + OFFX, 640, 1005);
     const tgt = new THREE.Vector3(OFFX, 0, 30);
-    if (anim) flyTo(pos, tgt); else { camera.position.copy(pos); controls.target.copy(tgt); }
+    if (anim) flyTo(pos, tgt); else { camera.position.copy(pos); controls.target.copy(tgt); setCanon(pos, tgt); }
   }
   function focusRoute(id) {
     // tip the camera over to a straight top-down look framing kiosk → kitchen,
@@ -340,6 +374,16 @@ const MapKiosk = (function () {
   }
 
   /* ---- route tube along the corridor ---- */
+  const LANE_L = luminance("#e8edf4");
+  function mixHex(a, b, t) {
+    const pa = [1, 3, 5].map((i) => parseInt(a.substr(i, 2), 16)), pb = [1, 3, 5].map((i) => parseInt(b.substr(i, 2), 16));
+    return "#" + pa.map((v, i) => Math.round(v + (pb[i] - v) * t).toString(16).padStart(2, "0")).join("");
+  }
+  function routeHex(hex) {
+    let c = safeCol(hex);
+    for (let i = 0; i < 16 && (LANE_L + .05) / (luminance(c) + .05) < 3.5; i++) c = mixHex(c, "#16181d", .12);
+    return c;
+  }
   function clearRoute() {
     for (const o of [routeObj, endObj, ...routePulses]) if (o) { scene.remove(o); o.geometry.dispose(); o.material.dispose(); }
     routeObj = endObj = null; routePulses = []; routeCurve = null; routeKey = "";
@@ -348,22 +392,21 @@ const MapKiosk = (function () {
     clearRoute();
     const pts = routePoints(id).map(p => new THREE.Vector3(wx(p[0]), 5, wz(p[1])));
     routeCurve = new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.04);
-    const col = new THREE.Color(safeCol((kitchenOf(id) || {}).color || "#0fae84"));
+    const col = new THREE.Color(routeHex((kitchenOf(id) || {}).color));
     const geo = new THREE.TubeGeometry(routeCurve, 140, 5.5, 10, false);
     routeIdx = geo.index.count;
     geo.setDrawRange(0, 0);                       // draw-on: revealed in loop(), like the SVG stroke-dashoffset trace
     routeDrawT0 = performance.now();
-    routeObj = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: .75, roughness: .35 }));
+    routeObj = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: col, toneMapped: false }));
     scene.add(routeObj);
     // flowing dots that travel the corridor route (the SVG dasharray "flow" equivalent)
     for (let i = 0; i < 5; i++) {
       const s = new THREE.Mesh(new THREE.SphereGeometry(7.5, 16, 12),
-        new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: col, emissiveIntensity: .95 }));
+        new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }));
       s.userData.ph = i / 5; s.visible = false; scene.add(s); routePulses.push(s);
     }
     const end = pts[pts.length - 1];
-    endObj = new THREE.Mesh(new THREE.SphereGeometry(11, 20, 14),
-      new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: col, emissiveIntensity: .9 }));
+    endObj = new THREE.Mesh(new THREE.SphereGeometry(13, 20, 14), new THREE.MeshBasicMaterial({ color: col, toneMapped: false }));
     endObj.position.copy(end).setY(10); endObj.visible = false; scene.add(endObj);
   }
 
@@ -379,21 +422,24 @@ const MapKiosk = (function () {
     for (const o of (scene._svc || [])) o.userData.lab.element.innerHTML = `<div class="m3-svc${isOutdoor(o.userData.svcKey) ? " out" : ""}">${I18N[o.userData.svcKey][lang]}</div>`;
     hereGrp.userData.lab.element.innerHTML = `<div class="m3-here">📍 ${I18N.youAreHere[lang]}</div>`;
     // selection: reset then highlight
-    for (const bid in blocks) { const b = blocks[bid];
+    const routeView = !!id && !!blocks[id] && hasRoute(id);
+    const kEl = document.getElementById("kiosk"); if (kEl) kEl.classList.toggle("map-sel", !!id);   // the touch hint steps aside once a kitchen is chosen
+    for (const bid in blocks) { const b = blocks[bid], base = "#" + b.col.getHexString();
       b.mesh.material.emissive.setHex(0x000000);
-      b.mesh.material.opacity = (!id || bid === id) ? 1 : 0.5;
+      b.mesh.material.opacity = 1;
+      b.mesh.material.color.set(routeView && bid !== id ? mixHex(base, "#ffffff", .58) : base);
       liftTo(b, bid === id ? b.baseY + 26 : b.baseY);
     }
     if (id && blocks[id]) {
       const b = blocks[id];
-      b.mesh.material.emissive.copy(b.mesh.material.color).multiplyScalar(.34);
+      if (b.occ) b.mesh.material.emissive.copy(b.mesh.material.color).multiplyScalar(.34);
+      else b.mesh.material.color.set(isSoon(kitchenOf(id)) ? "#a9b4cc" : "#9aa8c7");   // an empty unit: a clear blue-grey mark
       if (hasRoute(id)) {
         const key = id + "|" + b.mesh.material.color.getHexString();
         if (!routeObj || routeKey !== key) { buildRoute(id); routeKey = key; }
         if (idChanged || viewChanged) focusRoute(id);   // flatten to top-down over the route
       } else {
-        clearRoute();                                    // vacant: highlight only, keep the browse angle
-        if (idChanged || viewChanged) homeView(true);
+        clearRoute();                                    // empty unit: marked in place, the camera stays put
       }
     } else { clearRoute(); if (idChanged || viewChanged) homeView(true); }
   }
@@ -441,6 +487,10 @@ const MapKiosk = (function () {
         else p.visible = false;
       }
       if (endObj) { endObj.visible = k > .85; endObj.scale.setScalar(pulse); }
+    }
+    if (mainOn && !tween && canon) {
+      const away = camera.position.distanceTo(canon.pos) + controls.target.distanceTo(canon.tgt);
+      setMoved(away > (moved ? 25 : 90));                      // hysteresis: no flicker on the damping tail
     }
     if (mainOn) { renderer.render(scene, camera); fitLabelsIfMoved(); lblRenderer.render(scene, camera); }
   }
