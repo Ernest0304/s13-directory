@@ -23,6 +23,19 @@
     .m3-badge .ic { font-size: 23px; }
     .m3-nm { color: #fff; font-weight: 800; font-size: 15px; line-height: 1.05; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
     .m3-code { color: #fff; font-weight: 700; font-size: 11px; opacity: .82; letter-spacing: .05em; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
+    /* a name stays inside its own block: map3d.js sets max-width + data-fit from the block's on-screen width */
+    .m3-lab { white-space: normal; }
+    /* occupied blocks: the badge floats above the roof centre and the name hangs below it, so the
+       text always sits on the block's own colour (roof, then front wall) instead of the white floor behind */
+    .m3-lab:not(.vac) { transform: translateY(calc(50% - 47px)); }
+    .m3-lab .m3-code, .m3-lab .m3-av { white-space: nowrap; }
+    .m3-nm { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: break-word; text-wrap: balance; padding-bottom: 1px; }
+    .m3-lab[data-fit="m"] .m3-nm { font-size: 13px; }
+    .m3-lab[data-fit="s"] .m3-nm { font-size: 12px; }
+    .m3-lab[data-fit="x"] .m3-nm { display: none; }
+    /* bright roofs (amber, beige) and blocks faded behind a selection: dark text, light halo */
+    .m3-lab.on-light .m3-nm, .m3-lab.on-light .m3-code { color: #1b2433; text-shadow: 0 1px 5px rgba(255,255,255,.85), 0 0 2px rgba(255,255,255,.6); }
+    .m3-lab.on-light .m3-code { opacity: .78; }
     .m3-lab.vac { opacity: .92; }
     .m3-code.big { font-size: 16px; opacity: .9; }
     .m3-av { color: #fff; font-size: 10px; opacity: .68; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
@@ -144,7 +157,7 @@
       return r;
     };
   </script>
-  <script src="js/map3d.js?v=12"></script>
+  <script src="js/map3d.js?v=13"></script>
   <script src="js/app.js?v=12"></script>
   <script>
     // Collapsible directory rail — visitors reported it covering the right-hand

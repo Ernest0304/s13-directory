@@ -89,6 +89,7 @@ const MapKiosk = (function () {
     container.appendChild(lblRenderer.domElement);
 
     scene = new THREE.Scene();
+    fitV = new THREE.Vector3();
     camera = new THREE.PerspectiveCamera(42, 1, 1, 8000);
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true; controls.dampingFactor = .09;
@@ -184,7 +185,7 @@ const MapKiosk = (function () {
       scene.add(mesh);
       const labelEl = document.createElement("div");
       const lab = new CSS2DObject(labelEl); lab.position.set(0, H / 2 + 8, 0); mesh.add(lab);
-      blocks[id] = { mesh, occ, baseY: H / 2, H, labelEl, col: new THREE.Color(col), lift: null };
+      blocks[id] = { mesh, occ, baseY: H / 2, H, labelEl, col: new THREE.Color(col), lift: null, hx: (u.w - 2 * GAP) / 2, hz: (u.h - 2 * GAP) / 2, fit: "" };
     }
 
     // you-are-here
@@ -227,16 +228,67 @@ const MapKiosk = (function () {
   function safeCol(c) { return /^#[0-9a-fA-F]{6}$/.test(c) ? c : "#8A93A4"; }
   function mark(kk) { return kk && kk.logo ? `<img src="${kk.logo}" alt="">` : (kk && kk.icon ? `<span class="ic">${kk.icon}</span>` : ""); }
 
+  /* Relative luminance (0 black .. 1 white) of a #rrggbb colour. */
+  function luminance(hex) {
+    const c = [1, 3, 5].map((i) => { const v = parseInt(hex.substr(i, 2), 16) / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  }
+  /* The lit roof renders about half as bright as the licensee's colour (measured on screen), so
+   * white text is the readable choice up to a hex luminance of ~0.33; brighter roofs (amber,
+   * beige) and blocks faded behind a selection get dark text instead. */
+  const LIGHT_ROOF = 0.33;
   function blockLabelHTML(id) {
     const kk = kitchenOf(id), occ = !!(kk && kk.occupied), code = id.replace("K", "K-"), lang = state.lang;
-    if (occ) return `<div class="m3-lab"><div class="m3-badge">${mark(kk)}</div><div class="m3-nm">${(kk.name && kk.name[lang]) || code}</div><div class="m3-code">${code}</div></div>`;
+    if (occ) {
+      const name = (kk.name && (kk.name[lang] || kk.name.en || kk.name.zh)) || code;   // same current -> en fallback as app.js pick()
+      const faded = !!state.id && state.id !== id;
+      const light = faded || luminance(safeCol(kk.color)) > LIGHT_ROOF;
+      return `<div class="m3-lab${light ? " on-light" : ""}"><div class="m3-badge">${mark(kk)}</div><div class="m3-nm">${name}</div><div class="m3-code">${code}</div></div>`;
+    }
     return `<div class="m3-lab vac"><div class="m3-code big">${code}</div><div class="m3-av">${I18N.available ? I18N.available[lang] : ""}</div></div>`;
+  }
+
+  /* ---- label fitting: a name never runs past its own block ----
+   * The labels are fixed-size HTML floating over the 3D scene, so a long name used to spill over
+   * the neighbouring kitchens. Whenever the camera moves, measure how wide each block's roof is
+   * on screen and give its name that much room: it wraps to two lines, steps down a size, and is
+   * dropped (the badge and unit code stay) once the block is too small to hold it. */
+  let fitDirty = true, fitCam = null, fitV = null;
+  function fitLabels() {
+    const w = cont.clientWidth || 1, h = cont.clientHeight || 1;
+    for (const id in blocks) {
+      const b = blocks[id]; if (!b.occ) continue;
+      const lab = b.labelEl.firstElementChild; if (!lab) continue;
+      const top = b.mesh.position.y + b.H / 2;
+      let lo = Infinity, hi = -Infinity, ylo = Infinity, yhi = -Infinity, seen = true;
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+        fitV.set(b.mesh.position.x + sx * b.hx, top, b.mesh.position.z + sz * b.hz).project(camera);
+        if (fitV.z < -1 || fitV.z > 1) seen = false;
+        const x = (fitV.x + 1) / 2 * w, y = (1 - fitV.y) / 2 * h;
+        if (x < lo) lo = x; if (x > hi) hi = x; if (y < ylo) ylo = y; if (y > yhi) yhi = y;
+      }
+      if (!seen) continue;                                   // behind the camera: leave it as it was
+      const room = Math.max(0, Math.round((hi - lo - 14) / 4) * 4);   // 4 px steps: no restyling on every tiny move
+      // a roof seen almost edge-on (the map tilted flat) has no room for a name either
+      const fit = yhi - ylo < 30 ? "x" : room >= 150 ? "l" : room >= 112 ? "m" : room >= 84 ? "s" : "x";
+      const key = fit + room;
+      if (key === b.fit && lab.dataset.fit) continue;
+      b.fit = key; lab.dataset.fit = fit; lab.style.maxWidth = Math.max(room, 60) + "px";
+    }
+  }
+  function fitLabelsIfMoved() {
+    const p = camera.position, q = camera.quaternion;
+    if (!fitDirty && fitCam && Math.abs(p.x - fitCam[0]) + Math.abs(p.y - fitCam[1]) + Math.abs(p.z - fitCam[2]) < 0.5 &&
+        Math.abs(q.x - fitCam[3]) + Math.abs(q.y - fitCam[4]) + Math.abs(q.z - fitCam[5]) + Math.abs(q.w - fitCam[6]) < 0.0005) return;
+    fitCam = [p.x, p.y, p.z, q.x, q.y, q.z, q.w]; fitDirty = false;
+    fitLabels();
   }
 
   function resize() {
     if (!cont) return; const w = cont.clientWidth || 1, h = cont.clientHeight || 1;
     camera.aspect = w / h; camera.updateProjectionMatrix();
     renderer.setSize(w, h); lblRenderer.setSize(w, h);
+    fitDirty = true;
   }
 
   function applyTheme(t, force) {
@@ -315,7 +367,8 @@ const MapKiosk = (function () {
     state = { id, lang, theme, view };
     if (themeChanged) applyTheme(theme === "bright" ? DAY : NIGHT);
     // labels (content depends on lang)
-    for (const bid in blocks) blocks[bid].labelEl.innerHTML = blockLabelHTML(bid);
+    for (const bid in blocks) { blocks[bid].labelEl.innerHTML = blockLabelHTML(bid); blocks[bid].fit = ""; }
+    fitDirty = true;
     for (const o of (scene._svc || [])) o.userData.lab.element.innerHTML = `<div class="m3-svc${isOutdoor(o.userData.svcKey) ? " out" : ""}">${I18N[o.userData.svcKey][lang]}</div>`;
     hereGrp.userData.lab.element.innerHTML = `<div class="m3-here">📍 ${I18N.youAreHere[lang]}</div>`;
     // selection: reset then highlight
@@ -362,7 +415,7 @@ const MapKiosk = (function () {
       }
       if (endObj) { endObj.visible = k > .85; endObj.scale.setScalar(pulse); }
     }
-    if (mainOn) { renderer.render(scene, camera); lblRenderer.render(scene, camera); }
+    if (mainOn) { renderer.render(scene, camera); fitLabelsIfMoved(); lblRenderer.render(scene, camera); }
   }
 
   function render(container, id, lang, theme, view) {
