@@ -76,7 +76,9 @@
     .kiosk.rail-hidden .rail-toggle { right: 0; border-radius: 14px 0 0 14px; }
     .kiosk.rail-hidden .rail-toggle .rt-ico { transform: rotate(180deg); }
     @media (prefers-reduced-motion: reduce) { .rail-toggle, .rail-toggle .rt-ico, .main-a .browse-float { transition: none; } }
-    /* map tools: a touch hint, replaced by a Reset-map button once the visitor has moved the map */
+    /* map tools: a touch hint, replaced by a Reset-map button once the visitor has moved the map.
+       Their text is set through data-copy, not data-i18n: on the first load after a deploy an older
+       service worker can still serve the previous app.js, which stops at any data-i18n key it lacks. */
     .map-tools { position: absolute; z-index: 25; bottom: clamp(66px, 8.5vh, 100px); transform: translateX(-50%);
       left: calc(50% - (clamp(278px,28vw,440px) + clamp(14px,1.6vw,30px)) / 2); transition: left .42s cubic-bezier(.22,.61,.36,1);
       display: grid; place-items: center; pointer-events: none; }
@@ -154,10 +156,10 @@
       </button>
 
       <div class="map-tools" id="mapTools">
-        <span class="map-hint" data-i18n="mapHint">Tap a kitchen to see the way · drag to turn the map</span>
+        <span class="map-hint" data-copy="mapHint">Tap a kitchen to see the way · drag to turn the map</span>
         <button class="recentre" id="recentreBtn" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
-          <span data-i18n="recentre">Reset map</span>
+          <span data-copy="recentre">Reset map</span>
         </button>
       </div>
 
@@ -167,7 +169,7 @@
 
   </div>
 
-  <script src="js/config.js"></script>
+  <script src="js/config.js?v=2"></script>
   <script src="js/data.js?v=23"></script>
   <script src="js/db.js?v=3"></script>
   <script>
@@ -180,8 +182,8 @@
       return r;
     };
   </script>
-  <script src="js/map3d.js?v=16"></script>
-  <script src="js/app.js?v=14"></script>
+  <script src="js/map3d.js?v=18"></script>
+  <script src="js/app.js?v=16"></script>
   <script>
     // Collapsible directory rail — visitors reported it covering the right-hand
     // kitchens (K-11/K-12). Hiding it hands the full width back to the map and
@@ -214,6 +216,24 @@
       document.getElementById("recentreBtn").addEventListener("click", function (e) { e.stopPropagation(); if (typeof MapKiosk !== "undefined" && MapKiosk.refocus) MapKiosk.refocus(); });
       label();
     })();
+  </script>
+  <script>
+    // Offline shell (sw.js): after one online load this page, its scripts and the 3D engine
+    // open with no network, so a 04:00 restart during an outage still brings the board up.
+    // A new deploy is picked up with one reload, only while the ad screen is showing; if a
+    // visitor is mid-route, app.js reloads the moment the board returns to the ads.
+    if ("serviceWorker" in navigator) {
+      var swHadController = !!navigator.serviceWorker.controller, swReloaded = false;
+      navigator.serviceWorker.addEventListener("controllerchange", function () {
+        if (swReloaded || !swHadController) return;
+        var att = document.getElementById("attract");
+        if (att && att.classList.contains("active")) { swReloaded = true; location.reload(); }
+        else { window.__swPendingReload = true; }
+      });
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").catch(function (e) { console.warn("[sw] registration failed:", e && e.message); });
+      });
+    }
   </script>
 </body>
 </html>

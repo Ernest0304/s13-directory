@@ -83,6 +83,9 @@ const MapKiosk = (function () {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.domElement.style.cssText = "width:100%;height:100%;display:block";
+    let glLostTimer = null;
+    renderer.domElement.addEventListener("webglcontextlost", () => { glLostTimer = setTimeout(() => { window.__swPendingReload = true; }, 4000); });
+    renderer.domElement.addEventListener("webglcontextrestored", () => { clearTimeout(glLostTimer); });
     lblRenderer = new CSS2DRenderer();
     lblRenderer.domElement.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden";
     container.innerHTML = "";
@@ -277,7 +280,9 @@ const MapKiosk = (function () {
       const light = faded || luminance(safeCol(kk.color)) > LIGHT_ROOF;
       return `<div class="m3-lab${light ? " on-light" : ""}"><div class="m3-badge">${mark(kk)}</div><div class="m3-nm">${name}</div><div class="m3-code">${code}</div></div>`;
     }
-    const note = isSoon(kk) ? I18N.comingSoon[lang] : I18N.available[lang];
+    // I18N.comingSoon is new (Nov 2026): on the first load after a deploy an older service worker
+    // may still serve the previous data.js; the label then says "Vacant" until the reload
+    const note = isSoon(kk) && I18N.comingSoon ? I18N.comingSoon[lang] : I18N.available[lang];
     return `<div class="m3-lab vac${isSoon(kk) ? " soon" : ""}${state.id === id ? " sel" : ""}"><div class="m3-code big">${code}</div><div class="m3-av">${note}</div></div>`;
   }
 
@@ -499,10 +504,17 @@ const MapKiosk = (function () {
 
   function render(container, id, lang, theme, view) {
     view = view === "2d" ? "2d" : "3d";
-    if (!ready) { pending = { id, lang, theme, view }; if (!starting) { starting = true; setup(container); } return; }
+    if (!ready) { pending = { id, lang, theme, view }; start(container); return; }
     if (container !== cont) { cont = container; resize(); }
     apply(id, lang, theme, view);
   }
+  function start(container) {
+    if (starting) return;
+    starting = true;
+    setup(container).catch((e) => { console.warn("[map3d] could not start:", e && e.message); starting = false; window.__swPendingReload = true; });
+  }
+  /* build the scene while the ads are showing, so the first touch opens onto a ready map */
+  function preload(container) { if (!ready) start(container); }
   function refocus() { if (!ready) return; if (state.id && hasRoute(state.id)) focusRoute(state.id); else homeView(true); }
-  return { render, directions, setRailHidden, refocus };
+  return { render, directions, setRailHidden, refocus, preload };
 })();

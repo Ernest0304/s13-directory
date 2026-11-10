@@ -75,6 +75,8 @@
     const s = S();
     document.documentElement.lang = lang === "zh" ? "zh" : "en";
     document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = I18N[el.dataset.i18n][lang]; });
+    // strings added in Nov 2026 use data-copy (see the note at the map tools in index-3d.html)
+    document.querySelectorAll("[data-copy]").forEach((el) => { el.textContent = I18N[el.dataset.copy][lang]; });
     // facility-driven copy (editable in the admin) overrides the static defaults
     const name = (s.name || FACILITY.brand).en;   // brand name stays English in all languages
     document.querySelectorAll("[data-i18n-brand]").forEach((el) => { el.textContent = name; });
@@ -371,5 +373,6 @@
   /* ---------- init: load content, then start ---------- */
   loadContent().then(() => {
     applySettings(); applyStatic(); buildSlides(); buildChips(); buildShopRow(); buildFooter(); show("attract"); startPoll();
+    if (MapKiosk.preload) MapKiosk.preload(document.getElementById("map"));
   });
 })();
